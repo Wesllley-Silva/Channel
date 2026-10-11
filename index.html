@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Channel - Painel de Gestão</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen">
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen" class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="inline-flex p-3 bg-indigo-600/10 rounded-xl text-indigo-400 mb-3 text-3xl">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight">Channel Admin</h1>
+                <p class="text-sm text-slate-400 mt-1">Entre com suas credenciais para acessar o portal</p>
+            </div>
+            <form id="login-form" onsubmit="fazerLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">E-mail de Acesso</label>
+                    <input type="email" id="login-email" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Senha</label>
+                    <input type="password" id="login-senha" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-lg transition-all shadow-lg shadow-indigo-600/20">
+                    Entrar no Portal
+                </button>
+            </form>
+            <div id="login-error" class="mt-4 text-center text-sm text-red-400 hidden"></div>
+        </div>
+    </div>
+
+    <!-- PAINEL PRINCIPAL -->
+    <div id="dashboard-screen" class="hidden min-h-screen flex flex-col">
+        <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-indigo-600 rounded-lg text-white">
+                    <i class="fa-solid fa-chart-pie"></i>
+                </div>
+                <div>
+                    <h2 class="font-bold text-lg">WsPlay Gestão</h2>
+                    <p class="text-xs text-slate-400">Painel Executivo de Clientes</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="abrirModalNovoCliente()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> Novo Cliente
+                </button>
+                <button onclick="fazerLogout()" class="text-slate-400 hover:text-red-400 transition-all p-2" title="Sair">
+                    <i class="fa-solid fa-right-from-bracket text-lg"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+                    <p class="text-xs uppercase font-semibold text-slate-400">Total de Clientes</p>
+                    <h3 id="kpi-total" class="text-3xl font-bold mt-2 text-indigo-400">0</h3>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+                    <p class="text-xs uppercase font-semibold text-slate-400">Clientes Ativos</p>
+                    <h3 id="kpi-ativos" class="text-3xl font-bold mt-2 text-emerald-400">0</h3>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+                    <p class="text-xs uppercase font-semibold text-slate-400">Clientes Inativos</p>
+                    <h3 id="kpi-inativos" class="text-3xl font-bold mt-2 text-rose-400">0</h3>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+                    <p class="text-xs uppercase font-semibold text-slate-400">Servidores Ativos</p>
+                    <h3 id="kpi-servidores" class="text-3xl font-bold mt-2 text-amber-400">0</h3>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+                <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+                    <h3 class="font-semibold text-slate-200">Base de Clientes Cadastrados</h3>
+                    <input type="text" id="search-input" onkeyup="filtrarClientes()" placeholder="Buscar por nome ou telefone..." class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-sm w-72 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-950 text-slate-400 uppercase text-xs border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">Nome</th>
+                                <th class="p-3">Usuário</th>
+                                <th class="p-3">Telefone</th>
+                                <th class="p-3">Vencimento</th>
+                                <th class="p-3">Servidor</th>
+                                <th class="p-3">Aplicativo</th>
+                                <th class="p-3">Observação</th>
+                                <th class="p-3">Indicado Por</th>
+                                <th class="p-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-clientes-body" class="divide-y divide-slate-800">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL NOVO CLIENTE -->
+    <div id="modal-cliente" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                <h3 class="font-bold text-lg">Cadastrar Novo Cliente</h3>
+                <button onclick="fecharModalNovoCliente()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="form-novo-cliente" onsubmit="salvarCliente(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label class="text-xs text-slate-400">Nome</label><input type="text" name="Nome" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div><label class="text-xs text-slate-400">Usuário</label><input type="text" name="usuario" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div><label class="text-xs text-slate-400">Senha</label><input type="text" name="senha" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div><label class="text-xs text-slate-400">Telefone</label><input type="text" name="Telefone" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div><label class="text-xs text-slate-400">Vencimento</label><input type="date" name="Vencimento" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div><label class="text-xs text-slate-400">Vence Dia</label><input type="number" name="VenceDia" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div><label class="text-xs text-slate-400">Servidor</label><input type="text" name="servidor" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div><label class="text-xs text-slate-400">Aplicativo</label><input type="text" name="aplicativo" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div><label class="text-xs text-slate-400">Observação</label><input type="text" name="observacao" id="input-observacao" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div>
+                    <label class="text-xs text-slate-400">Indicado Por</label>
+                    <select name="indicado_por" id="select-indicado" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500">
+                        <option value="">Selecione uma observação...</option>
+                    </select>
+                </div>
+                <div><label class="text-xs text-slate-400">Status</label><input type="text" name="Status" value="Ativo" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div><label class="text-xs text-slate-400">Em Dia?</label><input type="text" name="EmDia?" value="Sim" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div class="md:col-span-2 flex justify-end gap-3 mt-4">
+                    <button type="button" onclick="fecharModalNovoCliente()" class="px-4 py-2 bg-slate-800 rounded-lg text-sm">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold">Salvar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://kwlmkocvleqiehexzwzw.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3bG1rb2N2bGVxaWVoZXh6d3p3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MDU1NDEsImV4cCI6MjEwNzI4MTU0MX0.WzYWd5uHYKZgWWNT4xaZ5Www_u5uIp9Rc1ClaG4v8Kw';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let clientesCache = [];
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                mostrarDashboard();
+            }
+        });
+
+        async function fazerLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const senha = document.getElementById('login-senha').value;
+            const errorDiv = document.getElementById('login-error');
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, senha });
+
+            if (error) {
+                errorDiv.textContent = 'Erro ao entrar: ' + error.message;
+                errorDiv.classList.remove('hidden');
+            } else {
+                await supabaseClient.from('audit_acessos').insert([{ usuario: email }]);
+                mostrarDashboard();
+            }
+        }
+
+        async function fazerLogout() {
+            await supabaseClient.auth.signOut();
+            document.getElementById('dashboard-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+        }
+
+        async function mostrarDashboard() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+            await carregarClientes();
+        }
+
+        async function carregarClientes() {
+            const { data, error } = await supabaseClient.from('clientes_wsplay').select('*');
+            if (!error && data) {
+                clientesCache = data;
+                renderizarDashboard(data);
+                atualizarListaIndicados(data);
+            }
+        }
+
+        function renderizarDashboard(dados) {
+            document.getElementById('kpi-total').textContent = dados.length;
+            const ativos = dados.filter(c => c.Status && c.Status.toLowerCase() === 'ativo').length;
+            document.getElementById('kpi-ativos').textContent = ativos;
+            document.getElementById('kpi-inativos').textContent = dados.length - ativos;
+            const servidoresUnicos = [...new Set(dados.map(c => c.servidor))].filter(Boolean).length;
+            document.getElementById('kpi-servidores').textContent = servidoresUnicos;
+
+            const tbody = document.getElementById('tabela-clientes-body');
+            tbody.innerHTML = '';
+            dados.forEach(c => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900/50 transition-all">
+                        <td class="p-3 font-medium text-white">${c.Nome || ''}</td>
+                        <td class="p-3">${c.usuario || '-'}</td>
+                        <td class="p-3">${c.Telefone || '-'}</td>
+                        <td class="p-3">${c.Vencimento || '-'}</td>
+                        <td class="p-3">${c.servidor || '-'}</td>
+                        <td class="p-3">${c.aplicativo || '-'}</td>
+                        <td class="p-3">${c.observacao || '-'}</td>
+                        <td class="p-3">${c.indicado_por || '-'}</td>
+                        <td class="p-3"><span class="px-2 py-1 rounded text-xs bg-indigo-500/10 text-indigo-400">${c.Status || 'Ativo'}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function atualizarListaIndicados(dados) {
+            const select = document.getElementById('select-indicado');
+            const observacoesUnicas = [...new Set(dados.map(c => c.observacao))].filter(Boolean);
+            
+            select.innerHTML = '<option value="">Selecione uma observação...</option>';
+            observacoesUnicas.forEach(obs => {
+                select.innerHTML += `<option value="${obs}">${obs}</option>`;
+            });
+        }
+
+        function filtrarClientes() {
+            const termo = document.getElementById('search-input').value.toLowerCase();
+            const filtrados = clientesCache.filter(c => 
+                (c.Nome && c.Nome.toLowerCase().includes(termo)) || 
+                (c.Telefone && c.Telefone.includes(termo))
+            );
+            renderizarDashboard(filtrados);
+        }
+
+        function abrirModalNovoCliente() {
+            document.getElementById('modal-cliente').classList.remove('hidden');
+            document.getElementById('modal-cliente').classList.add('flex');
+        }
+
+        function fecharModalNovoCliente() {
+            document.getElementById('modal-cliente').classList.remove('flex');
+            document.getElementById('modal-cliente').classList.add('hidden');
+        }
+
+        async function salvarCliente(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const novoObj = Object.fromEntries(formData.entries());
+
+            const { error } = await supabaseClient.from('clientes_wsplay').insert([novoObj]);
+            if (error) {
+                alert('Erro ao cadastrar: ' + error.message);
+            } else {
+                fecharModalNovoCliente();
+                e.target.reset();
+                await carregarClientes();
+                alert('Cliente cadastrado com sucesso!');
+            }
+        }
+    </script>
+</body>
+</html>
