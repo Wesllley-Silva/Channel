@@ -1,13 +1,16 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Channel - Painel de Gestão</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen">
 
     <!-- TELA DE LOGIN -->
@@ -18,27 +21,57 @@
                     <i class="fa-solid fa-bolt"></i>
                 </div>
                 <h1 class="text-2xl font-bold tracking-tight">Channel Admin</h1>
-                <p class="text-sm text-slate-400 mt-1">Entre com suas credenciais para acessar o portal</p>
+                <p class="text-sm text-slate-400 mt-1">
+                    Entre com suas credenciais para acessar o portal
+                </p>
             </div>
+
             <form id="login-form" onsubmit="fazerLogin(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">E-mail de Acesso</label>
-                    <input type="email" id="login-email" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                        E-mail de Acesso
+                    </label>
+                    <input
+                        type="email"
+                        id="login-email"
+                        autocomplete="username"
+                        required
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500"
+                    >
                 </div>
+
                 <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Senha</label>
-                    <input type="password" id="login-senha" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                        Senha
+                    </label>
+                    <input
+                        type="password"
+                        id="login-senha"
+                        autocomplete="current-password"
+                        required
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500"
+                    >
                 </div>
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-lg transition-all shadow-lg shadow-indigo-600/20">
+
+                <button
+                    type="submit"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-lg transition-all shadow-lg shadow-indigo-600/20"
+                >
                     Entrar no Portal
                 </button>
             </form>
-            <div id="login-error" class="mt-4 text-center text-sm text-red-400 hidden"></div>
+
+            <div
+                id="login-error"
+                role="alert"
+                class="mt-4 text-center text-sm text-red-400 hidden"
+            ></div>
         </div>
     </div>
 
     <!-- PAINEL PRINCIPAL -->
     <div id="dashboard-screen" class="hidden min-h-screen flex flex-col">
+
         <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <div class="p-2 bg-indigo-600 rounded-lg text-white">
@@ -49,41 +82,64 @@
                     <p class="text-xs text-slate-400">Painel Executivo de Clientes</p>
                 </div>
             </div>
+
             <div class="flex items-center space-x-4">
-                <button onclick="abrirModalNovoCliente()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2">
+                <button
+                    onclick="abrirModalNovoCliente()"
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2"
+                >
                     <i class="fa-solid fa-user-plus"></i> Novo Cliente
                 </button>
-                <button onclick="fazerLogout()" class="text-slate-400 hover:text-red-400 transition-all p-2" title="Sair">
+
+                <button
+                    onclick="fazerLogout()"
+                    class="text-slate-400 hover:text-red-400 transition-all p-2"
+                    title="Sair"
+                >
                     <i class="fa-solid fa-right-from-bracket text-lg"></i>
                 </button>
             </div>
         </header>
 
         <main class="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
+
+            <!-- INDICADORES -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
                     <p class="text-xs uppercase font-semibold text-slate-400">Total de Clientes</p>
                     <h3 id="kpi-total" class="text-3xl font-bold mt-2 text-indigo-400">0</h3>
                 </div>
+
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
                     <p class="text-xs uppercase font-semibold text-slate-400">Clientes Ativos</p>
                     <h3 id="kpi-ativos" class="text-3xl font-bold mt-2 text-emerald-400">0</h3>
                 </div>
+
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
                     <p class="text-xs uppercase font-semibold text-slate-400">Clientes Inativos</p>
                     <h3 id="kpi-inativos" class="text-3xl font-bold mt-2 text-rose-400">0</h3>
                 </div>
+
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
                     <p class="text-xs uppercase font-semibold text-slate-400">Servidores Ativos</p>
                     <h3 id="kpi-servidores" class="text-3xl font-bold mt-2 text-amber-400">0</h3>
                 </div>
             </div>
 
+            <!-- TABELA DE CLIENTES -->
             <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
                 <div class="p-4 border-b border-slate-800 flex justify-between items-center">
                     <h3 class="font-semibold text-slate-200">Base de Clientes Cadastrados</h3>
-                    <input type="text" id="search-input" onkeyup="filtrarClientes()" placeholder="Buscar por nome ou telefone..." class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-sm w-72 focus:outline-none focus:border-indigo-500">
+
+                    <input
+                        type="text"
+                        id="search-input"
+                        oninput="filtrarClientes()"
+                        placeholder="Buscar por nome ou telefone..."
+                        class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-sm w-72 focus:outline-none focus:border-indigo-500"
+                    >
                 </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-slate-300">
                         <thead class="bg-slate-950 text-slate-400 uppercase text-xs border-b border-slate-800">
@@ -99,8 +155,8 @@
                                 <th class="p-3">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="tabela-clientes-body" class="divide-y divide-slate-800">
-                        </tbody>
+
+                        <tbody id="tabela-clientes-body" class="divide-y divide-slate-800"></tbody>
                     </table>
                 </div>
             </div>
@@ -110,157 +166,395 @@
     <!-- MODAL NOVO CLIENTE -->
     <div id="modal-cliente" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
                 <h3 class="font-bold text-lg">Cadastrar Novo Cliente</h3>
-                <button onclick="fecharModalNovoCliente()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button onclick="fecharModalNovoCliente()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
             </div>
+
             <form id="form-novo-cliente" onsubmit="salvarCliente(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="text-xs text-slate-400">Nome</label><input type="text" name="Nome" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Usuário</label><input type="text" name="usuario" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Senha</label><input type="text" name="senha" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Telefone</label><input type="text" name="Telefone" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Vencimento</label><input type="date" name="Vencimento" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Vence Dia</label><input type="number" name="VenceDia" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Servidor</label><input type="text" name="servidor" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Aplicativo</label><input type="text" name="aplicativo" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Observação</label><input type="text" name="observacao" id="input-observacao" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+
+                <div>
+                    <label class="text-xs text-slate-400">Nome</label>
+                    <input type="text" name="Nome" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-400">Usuário</label>
+                    <input type="text" name="usuario" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-400">Senha</label>
+                    <input type="text" name="senha" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-400">Telefone</label>
+                    <input type="text" name="Telefone" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-400">Vencimento</label>
+                    <input type="date" name="Vencimento" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-400">Vence Dia</label>
+                    <input type="number" name="VenceDia" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-400">Servidor</label>
+                    <input type="text" name="servidor" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-400">Aplicativo</label>
+                    <input type="text" name="aplicativo" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-400">Observação</label>
+                    <input type="text" name="observacao" id="input-observacao" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm">
+                </div>
+
                 <div>
                     <label class="text-xs text-slate-400">Indicado Por</label>
                     <select name="indicado_por" id="select-indicado" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500">
                         <option value="">Selecione uma observação...</option>
                     </select>
                 </div>
-                <div><label class="text-xs text-slate-400">Status</label><input type="text" name="Status" value="Ativo" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Em Dia?</label><input type="text" name="EmDia?" value="Sim" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+
+                <div>
+                    <label class="text-xs text-slate-400">Status</label>
+                    <input type="text" name="Status" value="Ativo" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm">
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-400">Em Dia?</label>
+                    <input type="text" name="EmDia?" value="Sim" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm">
+                </div>
+
                 <div class="md:col-span-2 flex justify-end gap-3 mt-4">
-                    <button type="button" onclick="fecharModalNovoCliente()" class="px-4 py-2 bg-slate-800 rounded-lg text-sm">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold">Salvar Cliente</button>
+                    <button type="button" onclick="fecharModalNovoCliente()" class="px-4 py-2 bg-slate-800 rounded-lg text-sm">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold">
+                        Salvar Cliente
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
+        // CONFIGURAÇÃO SUPABASE
         const SUPABASE_URL = 'https://kwlmkocvleqiehexzwzw.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3bG1rb2N2bGVxaWVoZXh6d3p3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MDU1NDEsImV4cCI6MjEwNzI4MTU0MX0.WzYWd5uHYKZgWWNT4xaZ5Www_u5uIp9Rc1ClaG4v8Kw';
-        
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const SUPABASE_ANON_KEY =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3bG1rb2N2bGVxaWVoZXh6d3p3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MDU1NDEsImV4cCI6MjEwNzI4MTU0MX0.WzYWd5uHYKZgWWNT4xaZ5Www_u5uIp9Rc1ClaG4v8Kw';
+
+        const supabaseClient = supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
+        );
+
         let clientesCache = [];
 
+        // VERIFICA SE JÁ EXISTE UMA SESSÃO
         window.addEventListener('DOMContentLoaded', async () => {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                mostrarDashboard();
+            try {
+                const { data, error } = await supabaseClient.auth.getSession();
+
+                if (error) {
+                    console.error('Erro ao verificar sessão:', error.message);
+                    return;
+                }
+
+                if (data.session) {
+                    await mostrarDashboard();
+                }
+            } catch (erro) {
+                console.error('Erro ao iniciar o portal:', erro);
             }
         });
 
+        // LOGIN CORRIGIDO
         async function fazerLogin(e) {
             e.preventDefault();
+
             const email = document.getElementById('login-email').value.trim();
             const senha = document.getElementById('login-senha').value;
             const errorDiv = document.getElementById('login-error');
+            const botao = e.submitter ||
+                document.querySelector('#login-form button[type="submit"]');
 
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, senha });
+            errorDiv.textContent = '';
+            errorDiv.classList.add('hidden');
+            botao.disabled = true;
+            botao.textContent = 'Verificando...';
 
-            if (error) {
-                errorDiv.textContent = 'Erro ao entrar (' + error.status + '): ' + error.message;
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: senha
+                });
+
+                if (error) {
+                    console.error('Erro de autenticação:', {
+                        status: error.status,
+                        code: error.code,
+                        message: error.message
+                    });
+
+                    errorDiv.textContent =
+                        `Erro ao entrar (${error.status || 'sem status'}): ${error.message}`;
+
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                if (data.session) {
+                    errorDiv.classList.add('hidden');
+                    await mostrarDashboard();
+                } else {
+                    errorDiv.textContent = 'Não foi criada uma sessão. Tente novamente.';
+                    errorDiv.classList.remove('hidden');
+                }
+
+            } catch (erro) {
+                console.error('Falha na tentativa de login:', erro);
+
+                errorDiv.textContent =
+                    'Falha de comunicação com o Supabase. Verifique sua conexão.';
+
                 errorDiv.classList.remove('hidden');
-            } else {
-                errorDiv.classList.add('hidden');
-                mostrarDashboard();
+
+            } finally {
+                botao.disabled = false;
+                botao.textContent = 'Entrar no Portal';
             }
         }
 
+        // LOGOUT
         async function fazerLogout() {
-            await supabaseClient.auth.signOut();
+            const { error } = await supabaseClient.auth.signOut();
+
+            if (error) {
+                console.error('Erro ao sair:', error.message);
+            }
+
             document.getElementById('dashboard-screen').classList.add('hidden');
             document.getElementById('login-screen').classList.remove('hidden');
         }
 
+        // ABRE O PAINEL
         async function mostrarDashboard() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('dashboard-screen').classList.remove('hidden');
+
             await carregarClientes();
         }
 
+        // CARREGA CLIENTES E EXIBE ERROS
         async function carregarClientes() {
-            const { data, error } = await supabaseClient.from('clientes_wsplay').select('*');
-            if (!error && data) {
-                clientesCache = data;
-                renderizarDashboard(data);
-                atualizarListaIndicados(data);
+            const tbody = document.getElementById('tabela-clientes-body');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="p-4 text-center text-slate-400">
+                        Carregando clientes...
+                    </td>
+                </tr>
+            `;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('clientes_wsplay')
+                    .select('*');
+
+                if (error) {
+                    console.error('Erro ao carregar clientes:', error);
+
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="9" class="p-4 text-center text-red-400">
+                                Não foi possível carregar os clientes.
+                                Consulte o Console do navegador.
+                            </td>
+                        </tr>
+                    `;
+
+                    return;
+                }
+
+                clientesCache = data || [];
+                renderizarDashboard(clientesCache);
+                atualizarListaIndicados(clientesCache);
+
+            } catch (erro) {
+                console.error('Falha ao consultar clientes:', erro);
+
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="p-4 text-center text-red-400">
+                            Falha de comunicação ao carregar clientes.
+                        </td>
+                    </tr>
+                `;
             }
         }
 
+        // ATUALIZA OS INDICADORES E A TABELA
         function renderizarDashboard(dados) {
             document.getElementById('kpi-total').textContent = dados.length;
-            const ativos = dados.filter(c => c.Status && c.Status.toLowerCase() === 'ativo').length;
+
+            const ativos = dados.filter(c =>
+                c.Status && String(c.Status).toLowerCase() === 'ativo'
+            ).length;
+
             document.getElementById('kpi-ativos').textContent = ativos;
             document.getElementById('kpi-inativos').textContent = dados.length - ativos;
-            const servidoresUnicos = [...new Set(dados.map(c => c.servidor))].filter(Boolean).length;
-            document.getElementById('kpi-servidores').textContent = servidoresUnicos;
+
+            const servidoresUnicos = [
+                ...new Set(dados.map(c => c.servidor).filter(Boolean))
+            ];
+
+            document.getElementById('kpi-servidores').textContent =
+                servidoresUnicos.length;
 
             const tbody = document.getElementById('tabela-clientes-body');
             tbody.innerHTML = '';
+
             dados.forEach(c => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900/50 transition-all">
-                        <td class="p-3 font-medium text-white">${c.Nome || ''}</td>
-                        <td class="p-3">${c.usuario || '-'}</td>
-                        <td class="p-3">${c.Telefone || '-'}</td>
-                        <td class="p-3">${c.Vencimento || '-'}</td>
-                        <td class="p-3">${c.servidor || '-'}</td>
-                        <td class="p-3">${c.aplicativo || '-'}</td>
-                        <td class="p-3">${c.observacao || '-'}</td>
-                        <td class="p-3">${c.indicado_por || '-'}</td>
-                        <td class="p-3"><span class="px-2 py-1 rounded text-xs bg-indigo-500/10 text-indigo-400">${c.Status || 'Ativo'}</span></td>
-                    </tr>
-                `;
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-900/50 transition-all';
+
+                const valores = [
+                    c.Nome || '',
+                    c.usuario || '-',
+                    c.Telefone || '-',
+                    c.Vencimento || '-',
+                    c.servidor || '-',
+                    c.aplicativo || '-',
+                    c.observacao || '-',
+                    c.indicado_por || '-'
+                ];
+
+                valores.forEach((valor, indice) => {
+                    const td = document.createElement('td');
+                    td.className = 'p-3';
+
+                    if (indice === 0) {
+                        td.classList.add('font-medium', 'text-white');
+                    }
+
+                    // Texto inserido como texto, evitando interpretar HTML da base.
+                    td.textContent = valor;
+                    tr.appendChild(td);
+                });
+
+                const tdStatus = document.createElement('td');
+                tdStatus.className = 'p-3';
+
+                const span = document.createElement('span');
+                span.className =
+                    'px-2 py-1 rounded text-xs bg-indigo-500/10 text-indigo-400';
+                span.textContent = c.Status || 'Ativo';
+
+                tdStatus.appendChild(span);
+                tr.appendChild(tdStatus);
+                tbody.appendChild(tr);
             });
         }
 
+        // ATUALIZA A LISTA DE INDICADOS
         function atualizarListaIndicados(dados) {
             const select = document.getElementById('select-indicado');
-            const observacoesUnicas = [...new Set(dados.map(c => c.observacao))].filter(Boolean);
-            
-            select.innerHTML = '<option value="">Selecione uma observação...</option>';
+            const observacoesUnicas = [
+                ...new Set(dados.map(c => c.observacao).filter(Boolean))
+            ];
+
+            select.innerHTML = '';
+
+            const opcaoInicial = document.createElement('option');
+            opcaoInicial.value = '';
+            opcaoInicial.textContent = 'Selecione uma observação...';
+            select.appendChild(opcaoInicial);
+
             observacoesUnicas.forEach(obs => {
-                select.innerHTML += `<option value="${obs}">${obs}</option>`;
+                const opcao = document.createElement('option');
+                opcao.value = obs;
+                opcao.textContent = obs;
+                select.appendChild(opcao);
             });
         }
 
+        // FILTRA CLIENTES
         function filtrarClientes() {
-            const termo = document.getElementById('search-input').value.toLowerCase();
-            const filtrados = clientesCache.filter(c => 
-                (c.Nome && c.Nome.toLowerCase().includes(termo)) || 
-                (c.Telefone && c.Telefone.includes(termo))
+            const termo = document.getElementById('search-input')
+                .value.toLowerCase().trim();
+
+            const filtrados = clientesCache.filter(c =>
+                (c.Nome && String(c.Nome).toLowerCase().includes(termo)) ||
+                (c.Telefone && String(c.Telefone).includes(termo))
             );
+
             renderizarDashboard(filtrados);
         }
 
+        // ABRE MODAL
         function abrirModalNovoCliente() {
             document.getElementById('modal-cliente').classList.remove('hidden');
             document.getElementById('modal-cliente').classList.add('flex');
         }
 
+        // FECHA MODAL
         function fecharModalNovoCliente() {
             document.getElementById('modal-cliente').classList.remove('flex');
             document.getElementById('modal-cliente').classList.add('hidden');
         }
 
+        // CADASTRA CLIENTE
         async function salvarCliente(e) {
             e.preventDefault();
-            const formData = new FormData(e.target);
+
+            const formulario = e.target;
+            const botao = formulario.querySelector('button[type="submit"]');
+            const formData = new FormData(formulario);
             const novoObj = Object.fromEntries(formData.entries());
 
-            const { error } = await supabaseClient.from('clientes_wsplay').insert([novoObj]);
-            if (error) {
-                alert('Erro ao cadastrar: ' + error.message);
-            } else {
+            botao.disabled = true;
+            botao.textContent = 'Salvando...';
+
+            try {
+                const { error } = await supabaseClient
+                    .from('clientes_wsplay')
+                    .insert([novoObj]);
+
+                if (error) {
+                    console.error('Erro ao cadastrar cliente:', error);
+                    alert('Erro ao cadastrar cliente: ' + error.message);
+                    return;
+                }
+
                 fecharModalNovoCliente();
-                e.target.reset();
+                formulario.reset();
+
                 await carregarClientes();
+
                 alert('Cliente cadastrado com sucesso!');
+
+            } catch (erro) {
+                console.error('Falha ao cadastrar cliente:', erro);
+                alert('Falha de comunicação ao cadastrar cliente.');
+
+            } finally {
+                botao.disabled = false;
+                botao.textContent = 'Salvar Cliente';
             }
         }
     </script>
