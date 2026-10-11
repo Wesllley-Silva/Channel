@@ -156,17 +156,17 @@
 
         async function fazerLogin(e) {
             e.preventDefault();
-            const email = document.getElementById('login-email').value;
+            const email = document.getElementById('login-email').value.trim();
             const senha = document.getElementById('login-senha').value;
             const errorDiv = document.getElementById('login-error');
 
             const { data, error } = await supabaseClient.auth.signInWithPassword({ email, senha });
 
             if (error) {
-                errorDiv.textContent = 'Erro ao entrar: ' + error.message;
+                errorDiv.textContent = 'Erro ao entrar (' + error.status + '): ' + error.message;
                 errorDiv.classList.remove('hidden');
             } else {
-                await supabaseClient.from('audit_acessos').insert([{ usuario: email }]);
+                errorDiv.classList.add('hidden');
                 mostrarDashboard();
             }
         }
