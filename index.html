@@ -77,7 +77,7 @@
                     <h3 id="kpi-total" class="text-3xl font-bold mt-2 text-indigo-400">0</h3>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-                    <p class="text-xs uppercase font-semibold text-slate-400">Clientes Ativos</p>
+                    <p class="text-xs uppercase font-semibold text-slate-400">Clientes Ativos (Em Dia)</p>
                     <h3 id="kpi-ativos" class="text-3xl font-bold mt-2 text-sky-400">0</h3>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
@@ -86,8 +86,12 @@
                 </div>
             </div>
 
-            <!-- GRÁFICOS VISUAIS -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- GRÁFICOS VISUAIS (Incluindo Vencimentos por Dia do Mês) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+                    <h3 class="text-sm font-semibold text-slate-300 mb-4">Renovações por Dia (Vence Dia)</h3>
+                    <div class="h-64 flex justify-center"><canvas id="graficoVenceDia"></canvas></div>
+                </div>
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
                     <h3 class="text-sm font-semibold text-slate-300 mb-4">Distribuição por Servidores</h3>
                     <div class="h-64 flex justify-center"><canvas id="graficoServidores"></canvas></div>
@@ -123,11 +127,13 @@
                                 <th class="p-3">Usuário</th>
                                 <th class="p-3">Telefone</th>
                                 <th class="p-3 cursor-pointer" onclick="ordenarTabela('vencimento')">Vencimento <i class="fa-solid fa-sort"></i></th>
+                                <th class="p-3">Vence Dia</th>
                                 <th class="p-3">Servidor</th>
                                 <th class="p-3">Aplicativo</th>
                                 <th class="p-3">Observação</th>
                                 <th class="p-3">Indicado Por</th>
-                                <th class="p-3">Status / Alerta</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Em Dia?</th>
                                 <th class="p-3 text-center">Ações</th>
                             </tr>
                         </thead>
@@ -151,8 +157,8 @@
                 <div><label class="text-xs text-slate-400">Usuário</label><input type="text" name="usuario" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
                 <div><label class="text-xs text-slate-400">Senha</label><input type="text" name="senha" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
                 <div><label class="text-xs text-slate-400">Telefone</label><input type="text" name="telefone" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Vencimento</label><input type="date" name="vencimento" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Vence Dia</label><input type="number" name="vencedia" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div><label class="text-xs text-slate-400">Vencimento</label><input type="date" name="vencimento" id="input-vencimento" onchange="atualizarVenceDiaAuto()" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
+                <div><label class="text-xs text-slate-400">Vence Dia</label><input type="number" name="vencedia" id="input-vencedia" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
                 <div><label class="text-xs text-slate-400">Servidor</label><input type="text" name="servidor" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
                 <div><label class="text-xs text-slate-400">Aplicativo</label><input type="text" name="aplicativo" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
                 <div><label class="text-xs text-slate-400">Observação</label><input type="text" name="observacao" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
@@ -162,8 +168,6 @@
                         <option value="">Selecione...</option>
                     </select>
                 </div>
-                <div><label class="text-xs text-slate-400">Status</label><input type="text" name="status" value="Ativo" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Em Dia?</label><input type="text" name="emdia?" value="Sim" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
                 <div class="md:col-span-2 flex justify-end gap-3 mt-4">
                     <button type="button" onclick="fecharModalNovoCliente()" class="px-4 py-2 bg-slate-800 rounded-lg text-sm">Cancelar</button>
                     <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold">Salvar Cliente</button>
@@ -172,27 +176,23 @@
         </div>
     </div>
 
-    <!-- MODAL DE HISTÓRICO DE CHAMADOS / MUDANÇAS -->
+    <!-- MODAL DE HISTÓRICO -->
     <div id="modal-historico" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
                 <h3 class="font-bold text-lg text-indigo-400" id="titulo-modal-historico">Histórico do Cliente</h3>
                 <button onclick="fecharModalHistorico()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-
-            <!-- Adicionar nova nota/mudança -->
             <form onsubmit="adicionarHistorico(event)" class="mb-6 space-y-3">
                 <input type="hidden" id="hist-idc">
                 <div>
-                    <label class="text-xs text-slate-400">Registrar alteração (ex: Mudou de app, trocou senha, etc.)</label>
+                    <label class="text-xs text-slate-400">Registrar alteração (mudança de app, servidor, etc.)</label>
                     <div class="flex gap-2 mt-1">
                         <input type="text" id="nova-descricao-hist" required placeholder="Digite o que mudou..." class="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500">
                         <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-semibold">Adicionar</button>
                     </div>
                 </div>
             </form>
-
-            <!-- Lista de Históricos -->
             <div class="space-y-2" id="lista-historico-container">
                 <p class="text-sm text-slate-500 text-center py-4">Carregando histórico...</p>
             </div>
@@ -202,7 +202,7 @@
     <!-- SCRIPT DE LÓGICA -->
     <script>
         const SUPABASE_URL = 'https://kwlmkocvleqiehexzwzw.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3bG1rb2N2bGVxaWVoZXh6d3p3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MDU1NDEsImV4cCI6MjEwNzI4MTU0MX0.WzYWd5uHYKZgWWNT4xaZ5Www_u5uIp9Rc1ClaG4v8Kw';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3bG1rb2N2bGVxaWVoZXh6d3p3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3sqlite1MDU1NDEsImV4cCI6MjEwNzI4MTU0MX0.WzYWd5uHYKZgWWNT4xaZ5Www_u5uIp9Rc1ClaG4v8Kw';
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -212,6 +212,7 @@
         let ordemAscendente = true;
         let chartServidoresInstance = null;
         let chartAplicativosInstance = null;
+        let chartVenceDiaInstance = null;
         let clienteSelecionadoId = null;
         let clienteSelecionadoNome = '';
 
@@ -279,12 +280,12 @@
 
         async function carregarClientes() {
             const tbody = document.getElementById('tabela-clientes-body');
-            tbody.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-slate-400">Carregando clientes...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-slate-400">Carregando clientes...</td></tr>`;
 
             try {
                 const { data, error } = await supabaseClient.from('clientes_wsplay').select('*');
                 if (error) {
-                    tbody.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-red-400">Erro ao carregar clientes.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-red-400">Erro ao carregar clientes.</td></tr>`;
                     return;
                 }
                 clientesCache = data || [];
@@ -292,7 +293,7 @@
                 atualizarListaIndicados(clientesCache);
                 renderizarGraficos(clientesCache);
             } catch (erro) {
-                tbody.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-red-400">Falha de comunicação.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-red-400">Falha de comunicação.</td></tr>`;
             }
         }
 
@@ -304,10 +305,31 @@
             return Math.round((venc - hoje) / (1000 * 60 * 60 * 24));
         }
 
+        function avaliarStatusCliente(dataVencStr) {
+            const dias = calcularDiasDiferenca(dataVencStr);
+            let status = 'Ativo';
+            let emDia = 'Sim';
+
+            if (dias === 0) { status = 'Vence Hoje!'; emDia = 'Sim'; }
+            else if (dias === 1) { status = 'Vence Amanhã'; emDia = 'Sim'; }
+            else if (dias === 2) { status = 'Vence em 2 Dias'; emDia = 'Sim'; }
+            else if (dias === -1) { status = 'Venceu Ontem'; emDia = 'Não'; }
+            else if (dias <= -10) { status = 'Venceu há 10 Dias'; emDia = 'Não'; }
+            else if (dias < 0) { status = 'Vencido'; emDia = 'Não'; }
+
+            return { status, emDia, dias };
+        }
+
         function renderizarDashboard(dados) {
             document.getElementById('kpi-total').textContent = dados.length;
-            const ativos = dados.filter(c => c.status && String(c.status).toLowerCase() === 'ativo').length;
-            document.getElementById('kpi-ativos').textContent = ativos;
+            
+            // Conta apenas quem está em dia (sem vencer) para os ativos
+            const ativosEmDia = dados.filter(c => {
+                const avaliacao = avaliarStatusCliente(c.vencimento);
+                return avaliacao.emDia === 'Sim';
+            }).length;
+
+            document.getElementById('kpi-ativos').textContent = ativosEmDia;
             document.getElementById('kpi-faturamento').textContent = faturamentoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
             const servidoresUnicos = [...new Set(dados.map(c => c.servidor).filter(Boolean))];
@@ -320,15 +342,15 @@
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-900/50 transition-all border-b border-slate-800/50';
 
-                const dias = calcularDiasDiferenca(c.vencimento);
-                let badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-indigo-500/10 text-indigo-400">${c.status || 'Ativo'}</span>`;
+                const avaliacao = avaliarStatusCliente(c.vencimento);
+                let badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-indigo-500/10 text-indigo-400">${avaliacao.status}</span>`;
                 
-                if (dias === 0) badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-amber-500/20 text-amber-300 font-bold animate-pulse">Vence Hoje!</span>`;
-                else if (dias === 1) badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-yellow-500/20 text-yellow-300 font-bold">Vence Amanhã</span>`;
-                else if (dias === 2) badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-blue-500/20 text-blue-300">Vence em 2 Dias</span>`;
-                else if (dias === -1) badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-rose-500/20 text-rose-300 font-bold">Venceu Ontem</span>`;
-                else if (dias <= -10) badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-red-600/20 text-red-400 font-bold">Venceu há 10+ Dias</span>`;
-                else if (dias < 0) badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-rose-500/10 text-rose-400">Vencido</span>`;
+                if (avaliacao.dias === 0) badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-amber-500/20 text-amber-300 font-bold animate-pulse">${avaliacao.status}</span>`;
+                else if (avaliacao.dias < 0) badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-rose-500/20 text-rose-300 font-bold">${avaliacao.status}</span>`;
+
+                const badgeEmDia = avaliacao.emDia === 'Sim' 
+                    ? `<span class="px-2 py-1 rounded text-xs bg-emerald-500/10 text-emerald-400 font-semibold">Sim</span>`
+                    : `<span class="px-2 py-1 rounded text-xs bg-rose-500/10 text-rose-400 font-semibold">Não</span>`;
 
                 const foneLimpo = c.telefone ? c.telefone.replace(/\D/g, '') : '';
                 const msgZap = encodeURIComponent(`Olá ${c.nome || ''}, seu acesso ao WsPlay venceu ou está vencendo em ${c.vencimento || ''}. Regularize sua renovação via PIX para continuar aproveitando!`);
@@ -338,6 +360,7 @@
                     c.usuario || '-',
                     c.telefone || '-',
                     c.vencimento || '-',
+                    c.vencedia || '-',
                     c.servidor || '-',
                     c.aplicativo || '-',
                     c.observacao || '-',
@@ -356,6 +379,11 @@
                 tdStatus.className = 'p-3';
                 tdStatus.innerHTML = badgeStatus;
                 tr.appendChild(tdStatus);
+
+                const tdEmDia = document.createElement('td');
+                tdEmDia.className = 'p-3';
+                tdEmDia.innerHTML = badgeEmDia;
+                tr.appendChild(tdEmDia);
 
                 const tdAcoes = document.createElement('td');
                 tdAcoes.className = 'p-3 text-center flex items-center justify-center gap-1.5';
@@ -427,9 +455,10 @@
                 novaData = hoje.toISOString().split('T')[0];
             }
 
-            const { error: errUpdate } = await supabaseClient.from('clientes_wsplay').update({ vencimento: novaData, status: 'Ativo', 'emdia?': 'Sim' }).eq('idc', idc);
+            const avaliacao = avaliarStatusCliente(novaData);
+            const { error: errUpdate } = await supabaseClient.from('clientes_wsplay').update({ vencimento: novaData, status: avaliacao.status, 'emdia?': avaliacao.emDia }).eq('idc', idc);
             const { error: errPay } = await supabaseClient.from('historico_pagamentos').insert([{ idc: idc, nome_cliente: nomeCliente, valor: 26.00, tipo: 'renovacao' }]);
-            await supabaseClient.from('historico_chamados').insert([{ idc: idc, nome_cliente: nomeCliente, descricao_mudanca: `Renovação de acesso realizada. Novo vencimento: ${novaData}` }]);
+            await supabaseClient.from('historico_chamados').insert([{ idc: idc, nome_cliente: nomeCliente, descricao_mudanca: `Renovação realizada. Novo vencimento: ${novaData}` }]);
 
             if (errUpdate || errPay) {
                 alert('Erro ao processar renovação.');
@@ -440,7 +469,6 @@
             }
         }
 
-        // FUNÇÕES DO MODAL DE HISTÓRICO
         async function abrirModalHistorico(idc, nome) {
             clienteSelecionadoId = idc;
             clienteSelecionadoNome = nome;
@@ -462,13 +490,8 @@
 
             const { data, error } = await supabaseClient.from('historico_chamados').select('*').eq('idc', idc).order('data_registro', { ascending: false });
 
-            if (error) {
-                container.innerHTML = `<p class="text-sm text-red-400 text-center py-2">Erro ao carregar histórico.</p>`;
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                container.innerHTML = `<p class="text-sm text-slate-500 text-center py-4">Nenhum registro de alteração para este cliente ainda.</p>`;
+            if (error || !data || data.length === 0) {
+                container.innerHTML = `<p class="text-sm text-slate-500 text-center py-4">Nenhum registro de alteração ainda.</p>`;
                 return;
             }
 
@@ -503,6 +526,22 @@
         }
 
         function renderizarGraficos(dados) {
+            // Gráfico Vence Dia (Concentração de vencimentos no mês)
+            const venceDiaCount = {};
+            dados.forEach(c => { const dia = c.vencedia ? `Dia ${c.vencedia}` : 'Não Definido'; venceDiaCount[dia] = (venceDiaCount[dia] || 0) + 1; });
+
+            if (chartVenceDiaInstance) chartVenceDiaInstance.destroy();
+            const ctxDia = document.getElementById('graficoVenceDia').getContext('2d');
+            chartVenceDiaInstance = new Chart(ctxDia, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(venceDiaCount),
+                    datasets: [{ label: 'Clientes', data: Object.values(venceDiaCount), backgroundColor: '#10b981', borderRadius: 6 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
+            });
+
+            // Servidores
             const servidoresCount = {};
             dados.forEach(c => { const s = c.servidor || 'Não Definido'; servidoresCount[s] = (servidoresCount[s] || 0) + 1; });
             
@@ -517,6 +556,7 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
             });
 
+            // Aplicativos
             const appsCount = {};
             dados.forEach(c => { const a = c.aplicativo || 'Outros'; appsCount[a] = (appsCount[a] || 0) + 1; });
 
@@ -530,6 +570,14 @@
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
             });
+        }
+
+        function atualizarVenceDiaAuto() {
+            const dataVenc = document.getElementById('input-vencimento').value;
+            if (dataVenc) {
+                const dia = new Date(dataVenc + 'T00:00:00').getDate();
+                document.getElementById('input-vencedia').value = dia;
+            }
         }
 
         function atualizarListaIndicados(dados) {
@@ -550,6 +598,11 @@
             const formulario = e.target;
             const formData = new FormData(formulario);
             const novoObj = Object.fromEntries(formData.entries());
+
+            // Avalia o status automático ao cadastrar
+            const avaliacao = avaliarStatusCliente(novoObj.vencimento);
+            novoObj.status = avaliacao.status;
+            novoObj['emdia?'] = avaliacao.emDia;
 
             try {
                 const { data, error } = await supabaseClient.from('clientes_wsplay').insert([novoObj]).select();
