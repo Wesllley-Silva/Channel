@@ -71,7 +71,6 @@
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
                     <p class="text-xs uppercase font-semibold text-slate-400">Faturamento Confirmado</p>
                     <h3 id="kpi-faturamento" class="text-3xl font-bold mt-2 text-emerald-400">R$ 0,00</h3>
-                    <p class="text-[10px] text-slate-500 mt-1">Baseado em pagamentos registrados</p>
                 </div>
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
                     <p class="text-xs uppercase font-semibold text-slate-400">Total de Clientes</p>
@@ -173,6 +172,33 @@
         </div>
     </div>
 
+    <!-- MODAL DE HISTÓRICO DE CHAMADOS / MUDANÇAS -->
+    <div id="modal-historico" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                <h3 class="font-bold text-lg text-indigo-400" id="titulo-modal-historico">Histórico do Cliente</h3>
+                <button onclick="fecharModalHistorico()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <!-- Adicionar nova nota/mudança -->
+            <form onsubmit="adicionarHistorico(event)" class="mb-6 space-y-3">
+                <input type="hidden" id="hist-idc">
+                <div>
+                    <label class="text-xs text-slate-400">Registrar alteração (ex: Mudou de app, trocou senha, etc.)</label>
+                    <div class="flex gap-2 mt-1">
+                        <input type="text" id="nova-descricao-hist" required placeholder="Digite o que mudou..." class="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-semibold">Adicionar</button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Lista de Históricos -->
+            <div class="space-y-2" id="lista-historico-container">
+                <p class="text-sm text-slate-500 text-center py-4">Carregando histórico...</p>
+            </div>
+        </div>
+    </div>
+
     <!-- SCRIPT DE LÓGICA -->
     <script>
         const SUPABASE_URL = 'https://kwlmkocvleqiehexzwzw.supabase.co';
@@ -186,6 +212,8 @@
         let ordemAscendente = true;
         let chartServidoresInstance = null;
         let chartAplicativosInstance = null;
+        let clienteSelecionadoId = null;
+        let clienteSelecionadoNome = '';
 
         window.addEventListener('DOMContentLoaded', async () => {
             try {
@@ -280,8 +308,6 @@
             document.getElementById('kpi-total').textContent = dados.length;
             const ativos = dados.filter(c => c.status && String(c.status).toLowerCase() === 'ativo').length;
             document.getElementById('kpi-ativos').textContent = ativos;
-
-            // Exibe o faturamento real baseado na tabela de pagamentos
             document.getElementById('kpi-faturamento').textContent = faturamentoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
             const servidoresUnicos = [...new Set(dados.map(c => c.servidor).filter(Boolean))];
@@ -304,7 +330,6 @@
                 else if (dias <= -10) badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-red-600/20 text-red-400 font-bold">Venceu há 10+ Dias</span>`;
                 else if (dias < 0) badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-rose-500/10 text-rose-400">Vencido</span>`;
 
-                // Tratamento seguro do telefone para o WhatsApp (remove tudo que não for número)
                 const foneLimpo = c.telefone ? c.telefone.replace(/\D/g, '') : '';
                 const msgZap = encodeURIComponent(`Olá ${c.nome || ''}, seu acesso ao WsPlay venceu ou está vencendo em ${c.vencimento || ''}. Regularize sua renovação via PIX para continuar aproveitando!`);
 
@@ -333,10 +358,13 @@
                 tr.appendChild(tdStatus);
 
                 const tdAcoes = document.createElement('td');
-                tdAcoes.className = 'p-3 text-center flex items-center justify-center gap-2';
+                tdAcoes.className = 'p-3 text-center flex items-center justify-center gap-1.5';
                 tdAcoes.innerHTML = `
-                    <button onclick="renovarCliente(${c.idc}, '${c.vencimento || ''}', '${c.nome || ''}')" title="Renovar +30 Dias" class="p-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded-lg transition-all text-xs px-2.5 font-semibold">
-                        <i class="fa-solid fa-rotate"></i> Renovar
+                    <button onclick="renovarCliente(${c.idc}, '${c.vencimento || ''}', '${c.nome || ''}')" title="Renovar +30 Dias" class="p-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded-lg transition-all text-xs px-2 font-semibold">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                    <button onclick="abrirModalHistorico(${c.idc}, '${c.nome || ''}')" title="Ver Histórico / Mudanças" class="p-1.5 bg-sky-600/20 text-sky-400 hover:bg-sky-600 hover:text-white rounded-lg transition-all text-xs px-2 font-semibold">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
                     </button>
                     ${foneLimpo ? `<a href="https://wa.me/55${foneLimpo}?text=${msgZap}" target="_blank" title="Enviar WhatsApp" class="p-1.5 bg-emerald-600 text-white hover:bg-emerald-500 rounded-lg transition-all"><i class="fa-brands fa-whatsapp text-sm"></i></a>` : ''}
                 `;
@@ -399,16 +427,78 @@
                 novaData = hoje.toISOString().split('T')[0];
             }
 
-            // Atualiza o cliente e registra o pagamento no histórico financeiro real
             const { error: errUpdate } = await supabaseClient.from('clientes_wsplay').update({ vencimento: novaData, status: 'Ativo', 'emdia?': 'Sim' }).eq('idc', idc);
             const { error: errPay } = await supabaseClient.from('historico_pagamentos').insert([{ idc: idc, nome_cliente: nomeCliente, valor: 26.00, tipo: 'renovacao' }]);
+            await supabaseClient.from('historico_chamados').insert([{ idc: idc, nome_cliente: nomeCliente, descricao_mudanca: `Renovação de acesso realizada. Novo vencimento: ${novaData}` }]);
 
             if (errUpdate || errPay) {
                 alert('Erro ao processar renovação.');
             } else {
                 await carregarDadosFinanceiros();
                 await carregarClientes();
-                alert('Cliente renovado com sucesso e faturamento atualizado!');
+                alert('Cliente renovado com sucesso!');
+            }
+        }
+
+        // FUNÇÕES DO MODAL DE HISTÓRICO
+        async function abrirModalHistorico(idc, nome) {
+            clienteSelecionadoId = idc;
+            clienteSelecionadoNome = nome;
+            document.getElementById('hist-idc').value = idc;
+            document.getElementById('titulo-modal-historico').textContent = `Histórico / Mudanças: ${nome}`;
+            document.getElementById('modal-historico').classList.remove('hidden');
+            document.getElementById('modal-historico').classList.add('flex');
+            await carregarHistoricoCliente(idc);
+        }
+
+        function fecharModalHistorico() {
+            document.getElementById('modal-historico').classList.remove('flex');
+            document.getElementById('modal-historico').classList.add('hidden');
+        }
+
+        async function carregarHistoricoCliente(idc) {
+            const container = document.getElementById('lista-historico-container');
+            container.innerHTML = `<p class="text-sm text-slate-400 text-center py-2">Buscando histórico...</p>`;
+
+            const { data, error } = await supabaseClient.from('historico_chamados').select('*').eq('idc', idc).order('data_registro', { ascending: false });
+
+            if (error) {
+                container.innerHTML = `<p class="text-sm text-red-400 text-center py-2">Erro ao carregar histórico.</p>`;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<p class="text-sm text-slate-500 text-center py-4">Nenhum registro de alteração para este cliente ainda.</p>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            data.forEach(h => {
+                const dataFormatada = new Date(h.data_registro).toLocaleString('pt-BR');
+                container.innerHTML += `
+                    <div class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-xs space-y-1">
+                        <div class="text-slate-400 font-medium"><i class="fa-regular fa-clock"></i> ${dataFormatada}</div>
+                        <div class="text-slate-200">${h.descricao_mudanca}</div>
+                    </div>
+                `;
+            });
+        }
+
+        async function adicionarHistorico(e) {
+            e.preventDefault();
+            const descricao = document.getElementById('nova-descricao-hist').value;
+
+            const { error } = await supabaseClient.from('historico_chamados').insert([{
+                idc: clienteSelecionadoId,
+                nome_cliente: clienteSelecionadoNome,
+                descricao_mudanca: descricao
+            }]);
+
+            if (error) {
+                alert('Erro ao registrar histórico: ' + error.message);
+            } else {
+                document.getElementById('nova-descricao-hist').value = '';
+                await carregarHistoricoCliente(clienteSelecionadoId);
             }
         }
 
@@ -468,9 +558,9 @@
                     return;
                 }
 
-                // Registra a adesão inicial no histórico financeiro
                 if (data && data.length > 0) {
                     await supabaseClient.from('historico_pagamentos').insert([{ idc: data[0].idc, nome_cliente: data[0].nome, valor: 26.00, tipo: 'adesao' }]);
+                    await supabaseClient.from('historico_chamados').insert([{ idc: data[0].idc, nome_cliente: data[0].nome, descricao_mudanca: 'Cliente cadastrado no sistema.' }]);
                 }
 
                 fecharModalNovoCliente();
