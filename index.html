@@ -1,630 +1,1457 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WsPlay - Painel Executivo e Financeiro</title>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WsPlay - Painel de Gestão v10</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-
 <body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen">
 
-    <!-- TELA DE LOGIN -->
-    <div id="login-screen" class="flex items-center justify-center min-h-screen px-4">
-        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md">
-            <div class="text-center mb-8">
-                <div class="inline-flex p-3 bg-indigo-600/10 rounded-xl text-indigo-400 mb-3 text-3xl">
-                    <i class="fa-solid fa-bolt"></i>
-                </div>
-                <h1 class="text-2xl font-bold tracking-tight">WsPlay Admin</h1>
-                <p class="text-sm text-slate-400 mt-1">Entre com suas credenciais para acessar o portal</p>
-            </div>
-
-            <form id="login-form" onsubmit="fazerLogin(event)" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">E-mail de Acesso</label>
-                    <input type="email" id="login-email" autocomplete="username" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Senha</label>
-                    <input type="password" id="login-senha" autocomplete="current-password" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
-                </div>
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-lg transition-all shadow-lg shadow-indigo-600/20">
-                    Entrar no Portal
-                </button>
-            </form>
-            <div id="login-error" role="alert" class="mt-4 text-center text-sm text-red-400 hidden"></div>
+  <!-- LOGIN -->
+  <section id="login-screen" class="flex items-center justify-center min-h-screen px-4">
+    <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md">
+      <div class="text-center mb-8">
+        <div class="inline-flex p-3 bg-indigo-600/10 rounded-xl text-indigo-400 mb-3 text-3xl">
+          <i class="fa-solid fa-bolt"></i>
         </div>
-    </div>
-
-    <!-- PAINEL PRINCIPAL -->
-    <div id="dashboard-screen" class="hidden min-h-screen flex flex-col">
-        <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="p-2 bg-indigo-600 rounded-lg text-white">
-                    <i class="fa-solid fa-chart-line"></i>
-                </div>
-                <div>
-                    <h2 class="font-bold text-lg">WsPlay Gestão</h2>
-                    <p class="text-xs text-slate-400">Painel Executivo e Financeiro</p>
-                </div>
-            </div>
-
-            <div class="flex items-center space-x-4">
-                <button onclick="abrirModalNovoCliente()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2">
-                    <i class="fa-solid fa-user-plus"></i> Novo Cliente
-                </button>
-                <button onclick="fazerLogout()" class="text-slate-400 hover:text-red-400 transition-all p-2" title="Sair">
-                    <i class="fa-solid fa-right-from-bracket text-lg"></i>
-                </button>
-            </div>
-        </header>
-
-        <main class="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
-
-            <!-- INDICADORES E FATURAMENTO REAL -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-                    <p class="text-xs uppercase font-semibold text-slate-400">Faturamento Confirmado</p>
-                    <h3 id="kpi-faturamento" class="text-3xl font-bold mt-2 text-emerald-400">R$ 0,00</h3>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-                    <p class="text-xs uppercase font-semibold text-slate-400">Total de Clientes</p>
-                    <h3 id="kpi-total" class="text-3xl font-bold mt-2 text-indigo-400">0</h3>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-                    <p class="text-xs uppercase font-semibold text-slate-400">Clientes Ativos (Em Dia)</p>
-                    <h3 id="kpi-ativos" class="text-3xl font-bold mt-2 text-sky-400">0</h3>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-                    <p class="text-xs uppercase font-semibold text-slate-400">Servidores Ativos</p>
-                    <h3 id="kpi-servidores" class="text-3xl font-bold mt-2 text-amber-400">0</h3>
-                </div>
-            </div>
-
-            <!-- GRÁFICOS VISUAIS (Incluindo Vencimentos por Dia do Mês) -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-                    <h3 class="text-sm font-semibold text-slate-300 mb-4">Renovações por Dia (Vence Dia)</h3>
-                    <div class="h-64 flex justify-center"><canvas id="graficoVenceDia"></canvas></div>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-                    <h3 class="text-sm font-semibold text-slate-300 mb-4">Distribuição por Servidores</h3>
-                    <div class="h-64 flex justify-center"><canvas id="graficoServidores"></canvas></div>
-                </div>
-                <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
-                    <h3 class="text-sm font-semibold text-slate-300 mb-4">Aplicativos Mais Usados</h3>
-                    <div class="h-64 flex justify-center"><canvas id="graficoAplicativos"></canvas></div>
-                </div>
-            </div>
-
-            <!-- FILTROS RÁPIDOS E PESQUISA -->
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="filtrarPorVencimento('todos')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-semibold transition-all">Todos</button>
-                        <button onclick="filtrarPorVencimento('hoje')" class="px-3 py-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-semibold">Vence Hoje</button>
-                        <button onclick="filtrarPorVencimento('amanha')" class="px-3 py-1.5 bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 rounded-lg text-xs font-semibold">Vence Amanhã</button>
-                        <button onclick="filtrarPorVencimento('2dias')" class="px-3 py-1.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-semibold">Vence em 2 Dias</button>
-                        <button onclick="filtrarPorVencimento('ontem')" class="px-3 py-1.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold">Venceu Ontem</button>
-                        <button onclick="filtrarPorVencimento('10dias')" class="px-3 py-1.5 bg-red-600/20 text-red-300 border border-red-600/30 rounded-lg text-xs font-semibold">Venceu há 10 Dias</button>
-                    </div>
-                    <input type="text" id="search-input" oninput="aplicarFiltros()" placeholder="Buscar por nome ou telefone..." class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-sm w-72 focus:outline-none focus:border-indigo-500">
-                </div>
-            </div>
-
-            <!-- TABELA DE CLIENTES -->
-            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm text-slate-300">
-                        <thead class="bg-slate-950 text-slate-400 uppercase text-xs border-b border-slate-800">
-                            <tr>
-                                <th class="p-3 cursor-pointer" onclick="ordenarTabela('nome')">Nome <i class="fa-solid fa-sort"></i></th>
-                                <th class="p-3">Usuário</th>
-                                <th class="p-3">Telefone</th>
-                                <th class="p-3 cursor-pointer" onclick="ordenarTabela('vencimento')">Vencimento <i class="fa-solid fa-sort"></i></th>
-                                <th class="p-3">Vence Dia</th>
-                                <th class="p-3">Servidor</th>
-                                <th class="p-3">Aplicativo</th>
-                                <th class="p-3">Observação</th>
-                                <th class="p-3">Indicado Por</th>
-                                <th class="p-3">Status</th>
-                                <th class="p-3">Em Dia?</th>
-                                <th class="p-3 text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabela-clientes-body" class="divide-y divide-slate-800"></tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- MODAL NOVO CLIENTE -->
-    <div id="modal-cliente" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
-                <h3 class="font-bold text-lg">Cadastrar Novo Cliente</h3>
-                <button onclick="fecharModalNovoCliente()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <form id="form-novo-cliente" onsubmit="salvarCliente(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="text-xs text-slate-400">Nome</label><input type="text" name="nome" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Usuário</label><input type="text" name="usuario" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Senha</label><input type="text" name="senha" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Telefone</label><input type="text" name="telefone" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Vencimento</label><input type="date" name="vencimento" id="input-vencimento" onchange="atualizarVenceDiaAuto()" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Vence Dia</label><input type="number" name="vencedia" id="input-vencedia" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Servidor</label><input type="text" name="servidor" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Aplicativo</label><input type="text" name="aplicativo" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div><label class="text-xs text-slate-400">Observação</label><input type="text" name="observacao" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm"></div>
-                <div>
-                    <label class="text-xs text-slate-400">Indicado Por</label>
-                    <select name="indicado_por" id="select-indicado" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500">
-                        <option value="">Selecione...</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2 flex justify-end gap-3 mt-4">
-                    <button type="button" onclick="fecharModalNovoCliente()" class="px-4 py-2 bg-slate-800 rounded-lg text-sm">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold">Salvar Cliente</button>
-                </div>
-            </form>
+        <h1 class="text-2xl font-bold">WsPlay Gestão</h1>
+        <p class="text-sm text-slate-400 mt-1">Entre com suas credenciais para acessar o painel</p>
+      </div>
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label for="login-email" class="block text-xs font-semibold uppercase text-slate-400 mb-1">E-mail</label>
+          <input type="email" id="login-email" autocomplete="username" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
         </div>
-    </div>
-
-    <!-- MODAL DE HISTÓRICO -->
-    <div id="modal-historico" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
-                <h3 class="font-bold text-lg text-indigo-400" id="titulo-modal-historico">Histórico do Cliente</h3>
-                <button onclick="fecharModalHistorico()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <form onsubmit="adicionarHistorico(event)" class="mb-6 space-y-3">
-                <input type="hidden" id="hist-idc">
-                <div>
-                    <label class="text-xs text-slate-400">Registrar alteração (mudança de app, servidor, etc.)</label>
-                    <div class="flex gap-2 mt-1">
-                        <input type="text" id="nova-descricao-hist" required placeholder="Digite o que mudou..." class="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500">
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-semibold">Adicionar</button>
-                    </div>
-                </div>
-            </form>
-            <div class="space-y-2" id="lista-historico-container">
-                <p class="text-sm text-slate-500 text-center py-4">Carregando histórico...</p>
-            </div>
+        <div>
+          <label for="login-senha" class="block text-xs font-semibold uppercase text-slate-400 mb-1">Senha</label>
+          <input type="password" id="login-senha" autocomplete="current-password" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
         </div>
+        <button id="btn-login" type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-lg transition-all">
+          Entrar no painel
+        </button>
+      </form>
+      <p id="login-error" role="alert" class="mt-4 text-center text-sm text-red-400 hidden"></p>
     </div>
+  </section>
 
-    <!-- SCRIPT DE LÓGICA -->
-    <script>
-        const SUPABASE_URL = 'https://kwlmkocvleqiehexzwzw.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3bG1rb2N2bGVxaWVoZXh6d3p3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3sqlite1MDU1NDEsImV4cCI6MjEwNzI4MTU0MX0.WzYWd5uHYKZgWWNT4xaZ5Www_u5uIp9Rc1ClaG4v8Kw';
+  <!-- PAINEL -->
+  <section id="dashboard-screen" class="hidden min-h-screen flex flex-col">
+    <header class="bg-slate-900 border-b border-slate-800 px-4 md:px-6 py-4 flex flex-wrap gap-3 justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-indigo-600 rounded-lg text-white"><i class="fa-solid fa-chart-pie"></i></div>
+        <div>
+          <h2 class="font-bold text-lg">WsPlay Gestão</h2>
+          <p class="text-xs text-slate-400">Painel Executivo de Clientes</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="btn-atualizar" type="button" class="bg-slate-800 hover:bg-slate-700 text-sm px-3 py-2 rounded-lg">
+          <i class="fa-solid fa-rotate-right mr-1"></i> Atualizar
+        </button>
+        <button id="btn-exportar-base" type="button" class="bg-emerald-700 hover:bg-emerald-600 text-white text-sm px-3 py-2 rounded-lg font-medium">
+          <i class="fa-solid fa-file-arrow-down mr-1"></i> Baixar base
+        </button>
+        <button id="btn-novo-cliente" type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-lg font-medium">
+          <i class="fa-solid fa-user-plus mr-1"></i> Novo Cliente
+        </button>
+        <button id="btn-logout" type="button" class="text-slate-400 hover:text-red-400 p-2" title="Sair" aria-label="Sair">
+          <i class="fa-solid fa-right-from-bracket text-lg"></i>
+        </button>
+      </div>
+    </header>
 
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <main class="flex-1 p-4 md:p-6 max-w-screen-2xl mx-auto w-full space-y-6">
+      <div id="app-message" class="hidden rounded-lg border px-4 py-3 text-sm" role="status"></div>
 
-        let clientesCache = [];
-        let faturamentoTotal = 0;
-        let filtroAtivoVencimento = 'todos';
-        let ordemAscendente = true;
-        let chartServidoresInstance = null;
-        let chartAplicativosInstance = null;
-        let chartVenceDiaInstance = null;
-        let clienteSelecionadoId = null;
-        let clienteSelecionadoNome = '';
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+          <p class="text-xs uppercase font-semibold text-slate-400">Total de Clientes</p>
+          <h3 id="kpi-total" class="text-3xl font-bold mt-2 text-indigo-400">—</h3>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+          <p class="text-xs uppercase font-semibold text-slate-400">Clientes em dia</p>
+          <h3 id="kpi-ativos" class="text-3xl font-bold mt-2 text-emerald-400">—</h3>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+          <p class="text-xs uppercase font-semibold text-slate-400">Clientes vencidos</p>
+          <h3 id="kpi-inativos" class="text-3xl font-bold mt-2 text-rose-400">—</h3>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl">
+          <p class="text-xs uppercase font-semibold text-slate-400">Servidores Cadastrados</p>
+          <h3 id="kpi-servidores" class="text-3xl font-bold mt-2 text-amber-400">—</h3>
+        </div>
+      </div>
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const { data, error } = await supabaseClient.auth.getSession();
-                if (data.session) { await mostrarDashboard(); }
-            } catch (erro) { console.error('Erro:', erro); }
-        });
+      <section class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-wrap items-end gap-3">
+        <div class="mr-auto"><h3 class="font-semibold text-slate-200">Filtro de período dos gráficos</h3><p class="text-xs text-slate-400 mt-1">Escolha ano e mês. Deixe vazio ou clique em limpar para ver o geral.</p></div>
+        <div><label for="graficos-data-inicio" class="block text-xs text-slate-400 mb-1">Mês inicial</label><input id="graficos-data-inicio" type="month" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm"></div>
+        <div><label for="graficos-data-fim" class="block text-xs text-slate-400 mb-1">Mês final</label><input id="graficos-data-fim" type="month" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm"></div>
+        <button id="btn-limpar-periodo-graficos" type="button" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm">Limpar período</button>
+      </section>
+      <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 shadow-xl xl:col-span-2">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4"><div><h3 class="font-semibold text-slate-200">Financeiro por mês de vencimento</h3><p class="text-xs text-slate-400 mt-1">Cada renovação vale R$ 26,00. O pagamento é atribuído ao mês do vencimento anterior, mesmo que tenha sido recebido em outro mês.</p></div><div class="flex flex-wrap gap-2 items-center"><label for="filtro-mes-financeiro" class="text-xs text-slate-400">Mês</label><select id="filtro-mes-financeiro" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm"><option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option></select><label for="filtro-ano-financeiro" class="text-xs text-slate-400">Ano</label><select id="filtro-ano-financeiro" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm"></select></div></div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4"><div class="rounded-lg bg-slate-950 p-4"><p class="text-xs text-slate-400">Receita potencial</p><p id="fin-receita-potencial" class="text-2xl font-bold text-indigo-300">—</p><p class="text-xs text-slate-500 mt-1">Todas as renovações previstas para o mês</p></div><div class="rounded-lg bg-slate-950 p-4"><p class="text-xs text-slate-400">Receita recebida (confirmada)</p><p id="fin-receita-recebida" class="text-2xl font-bold text-emerald-300">—</p><p class="text-xs text-slate-500 mt-1">Somente renovações marcadas como pagas</p></div><div class="rounded-lg bg-slate-950 p-4"><p class="text-xs text-slate-400">Receita ainda esperada</p><p id="fin-receita-esperada" class="text-2xl font-bold text-amber-300">—</p><p class="text-xs text-slate-500 mt-1">Potencial menos pagamentos confirmados</p></div></div>
+          <div class="rounded-lg border border-slate-800 p-3 mb-4"><div class="flex flex-wrap justify-between gap-2 mb-2"><h4 class="font-semibold text-sm">Renovações do mês selecionado</h4><p class="text-xs text-slate-500">Use o botão para confirmar ou desfazer um pagamento.</p></div><div id="fin-tabela-pagamentos" class="overflow-x-auto"></div></div>
+          <div class="relative h-72"><canvas id="grafico-financeiro-mensal" role="img" aria-label="Ativações e clientes vencidos por mês"></canvas></div>
+          <div id="tabela-faturamento-mensal" class="overflow-x-auto mt-4"></div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 shadow-xl"><div class="flex flex-wrap justify-between items-center gap-2 mb-3"><h3 class="font-semibold text-slate-200">Matriz de cadastros</h3><select id="matriz-cadastros-ano" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm"></select></div><div id="matriz-cadastros" class="overflow-x-auto"></div><p class="text-xs text-slate-500 mt-2">Clique em um mês ou dia para filtrar a base.</p></div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 shadow-xl"><div class="flex flex-wrap justify-between items-center gap-2 mb-3"><h3 class="font-semibold text-slate-200">Matriz de vencidos por vencimento</h3><select id="matriz-vencidos-ano" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm"></select></div><div id="matriz-vencidos" class="overflow-x-auto"></div><p class="text-xs text-slate-500 mt-2">Agrupa clientes atualmente vencidos pela data de vencimento. Não representa necessariamente o mês em que deixaram de pagar.</p></div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 shadow-xl xl:col-span-2"><div class="flex flex-wrap justify-between items-center gap-3 mb-3"><h3 class="font-semibold text-slate-200">Evolução da base por dia do mês</h3><div class="flex items-center gap-2"><label for="filtro-evolucao-periodo" class="text-xs text-slate-400">Período</label><select id="filtro-evolucao-periodo" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm"><option value="todos">Todos os períodos</option></select></div></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><div class="rounded-lg bg-slate-950 p-3"><p class="text-xs text-slate-400">Clientes cadastrados</p><p id="evol-total" class="text-2xl font-bold">—</p></div><div class="rounded-lg bg-slate-950 p-3"><p class="text-xs text-slate-400">Em dia hoje</p><p id="evol-emdia" class="text-2xl font-bold text-emerald-300">—</p></div><div class="rounded-lg bg-slate-950 p-3"><p class="text-xs text-slate-400">Vencidos hoje</p><p id="evol-vencidos" class="text-2xl font-bold text-red-300">—</p></div></div><div class="relative h-64 mt-4"><canvas id="grafico-evolucao-base" role="img" aria-label="Quantidade de cadastros por dia do mês"></canvas></div></div>
+      </section>
+      <section class="space-y-3">
+        <div><h3 class="font-semibold text-slate-200">Resumo rápido de vencimentos</h3><p class="text-xs text-slate-400 mt-1">Os indicadores são calculados automaticamente pelo vencimento. Clique em um cartão para filtrar a base.</p></div>
+        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+          <button type="button" data-filtro-vencimento="vencidos" class="text-left bg-red-950/50 border border-red-900 hover:border-red-500 p-4 rounded-xl transition-colors"><p class="text-xs font-semibold text-red-200">Vencidos</p><p id="kpi-qtd-vencidos" class="text-2xl font-bold mt-2 text-red-300">—</p></button>
+          <button type="button" data-filtro-vencimento="em_dia" class="text-left bg-slate-900 border border-slate-700 hover:border-slate-400 p-4 rounded-xl transition-colors"><p class="text-xs font-semibold text-slate-300">Em dia</p><p id="kpi-qtd-em-dia" class="text-2xl font-bold mt-2 text-slate-100">—</p></button>
+          <button type="button" data-filtro-vencimento="hoje" class="text-left bg-yellow-950/50 border border-yellow-900 hover:border-yellow-500 p-4 rounded-xl transition-colors"><p class="text-xs font-semibold text-yellow-200">Vencem hoje</p><p id="kpi-qtd-hoje" class="text-2xl font-bold mt-2 text-yellow-200">—</p></button>
+          <button type="button" data-filtro-vencimento="amanha" class="text-left bg-green-950/50 border border-green-900 hover:border-green-500 p-4 rounded-xl transition-colors"><p class="text-xs font-semibold text-green-200">Vencem amanhã</p><p id="kpi-qtd-amanha" class="text-2xl font-bold mt-2 text-green-200">—</p></button>
+          <button type="button" data-filtro-vencimento="dois_dias" class="text-left bg-blue-950/50 border border-blue-900 hover:border-blue-500 p-4 rounded-xl transition-colors"><p class="text-xs font-semibold text-blue-200">Vencem em 2 dias</p><p id="kpi-qtd-dois-dias" class="text-2xl font-bold mt-2 text-blue-200">—</p></button>
+        </div>
+      </section>
+      <section class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+          <div>
+            <h3 class="font-semibold text-slate-200">Previsão de renovações por dia do mês</h3>
+            <p class="text-xs text-slate-400 mt-1">Conta clientes em dia agrupados pelo dia do vencimento. Clique em uma barra para listar os clientes daquele dia.</p>
+          </div>
+          <button id="btn-limpar-dia-grafico" type="button" class="hidden text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700">Limpar seleção do dia</button>
+        </div>
+        <div class="relative h-64 md:h-80"><canvas id="grafico-vencimentos" aria-label="Quantidade de clientes ativos por dia do vencimento" role="img"></canvas></div>
+        <p id="grafico-resumo" class="text-xs text-slate-400 mt-3"></p>
+      </section>
 
-        async function fazerLogin(e) {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value.trim();
-            const senha = document.getElementById('login-senha').value;
-            const errorDiv = document.getElementById('login-error');
-            const botao = e.submitter || document.querySelector('#login-form button[type="submit"]');
+      <section class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 shadow-xl"><h3 class="font-semibold text-slate-200">Dias do mês com mais cadastros</h3><p class="text-xs text-slate-400 mt-1 mb-4">Ranking dos dias 1 a 31, somando os cadastros de todas as datas do período selecionado.</p><div class="relative h-64"><canvas id="grafico-cadastros" role="img" aria-label="Clientes cadastrados por data"></canvas></div><p id="resumo-cadastros" class="text-xs text-slate-400 mt-3"></p></div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 shadow-xl"><h3 class="font-semibold text-slate-200">Clientes por aplicativo</h3><p class="text-xs text-slate-400 mt-1 mb-4">Clique em uma barra para listar os clientes daquele aplicativo.</p><div class="relative h-64"><canvas id="grafico-aplicativos" role="img" aria-label="Clientes por aplicativo"></canvas></div><p id="resumo-aplicativos" class="text-xs text-slate-400 mt-3"></p></div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 shadow-xl"><h3 class="font-semibold text-slate-200">Clientes por servidor</h3><p class="text-xs text-slate-400 mt-1 mb-4">Exibe somente clientes em dia. Clique em uma barra para filtrar a base por servidor.</p><div class="relative h-64"><canvas id="grafico-servidores" role="img" aria-label="Clientes por servidor"></canvas></div><p id="resumo-servidores" class="text-xs text-slate-400 mt-3"></p></div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 shadow-xl"><h3 class="font-semibold text-slate-200">Quem mais indica clientes</h3><p class="text-xs text-slate-400 mt-1 mb-4">Ranking pelo campo “Indicado Por”. Clique em uma barra para filtrar a base.</p><div class="relative h-64"><canvas id="grafico-indicadores" role="img" aria-label="Clientes por indicador"></canvas></div><p id="resumo-indicadores" class="text-xs text-slate-400 mt-3"></p></div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 md:p-5 shadow-xl xl:col-span-2"><h3 class="font-semibold text-slate-200">Clientes em dia x vencidos</h3><p class="text-xs text-slate-400 mt-1 mb-4">Mostra a quantidade e o percentual por situação calculada a partir do vencimento. Clique em uma fatia para filtrar a base.</p><div class="relative h-72 max-w-2xl mx-auto"><canvas id="grafico-ativos-inativos" role="img" aria-label="Proporção de clientes ativos e inativos"></canvas></div><p id="resumo-ativos-inativos" class="text-xs text-slate-400 mt-3 text-center"></p></div>
+      </section>
+      <div class="flex flex-wrap items-center justify-between gap-3"><p id="filtro-grafico-ativo" class="text-sm text-indigo-300 hidden"></p><button id="btn-limpar-filtros-graficos" type="button" class="hidden text-xs px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500">Limpar filtro dos gráficos</button></div>
+      <section class="space-y-3"><div><h3 class="font-semibold text-slate-200">Atalhos de vencimento</h3><p class="text-xs text-slate-400 mt-1">Clique em um cartão para filtrar a tabela de clientes.</p></div><div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+        <button type="button" data-filtro-vencimento="ontem" class="text-left bg-orange-950/50 border border-orange-900 hover:border-orange-500 p-3 rounded-xl"><p class="text-xs font-semibold text-orange-200">Venceram ontem</p><p id="kpi-qtd-ontem" class="text-2xl font-bold mt-1 text-orange-200">—</p></button>
+        <button type="button" data-filtro-vencimento="hoje" class="text-left bg-yellow-950/50 border border-yellow-900 hover:border-yellow-500 p-3 rounded-xl"><p class="text-xs font-semibold text-yellow-200">Vencem hoje</p><p id="kpi-qtd-hoje-tabela" class="text-2xl font-bold mt-1 text-yellow-200">—</p></button>
+        <button type="button" data-filtro-vencimento="amanha" class="text-left bg-green-950/50 border border-green-900 hover:border-green-500 p-3 rounded-xl"><p class="text-xs font-semibold text-green-200">Vencem amanhã</p><p id="kpi-qtd-amanha-tabela" class="text-2xl font-bold mt-1 text-green-200">—</p></button>
+        <button type="button" data-filtro-vencimento="dois_dias" class="text-left bg-blue-950/50 border border-blue-900 hover:border-blue-500 p-3 rounded-xl"><p class="text-xs font-semibold text-blue-200">Em 2 dias</p><p id="kpi-qtd-dois-tabela" class="text-2xl font-bold mt-1 text-blue-200">—</p></button>
+        <button type="button" data-filtro-vencimento="vencidos" class="text-left bg-red-950/50 border border-red-900 hover:border-red-500 p-3 rounded-xl"><p class="text-xs font-semibold text-red-200">Todos vencidos</p><p id="kpi-qtd-vencidos-tabela" class="text-2xl font-bold mt-1 text-red-300">—</p></button>
+        <button type="button" data-filtro-vencimento="todos" class="text-left bg-slate-900 border border-slate-700 hover:border-slate-400 p-3 rounded-xl"><p class="text-xs font-semibold text-slate-300">Todos os clientes</p><p id="kpi-qtd-total-tabela" class="text-2xl font-bold mt-1 text-slate-100">—</p></button>
+      </div></section>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+        <div class="p-4 border-b border-slate-800 flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+          <div>
+            <h3 class="font-semibold text-slate-200">Base de Clientes</h3>
+            <p id="resultado-contagem" class="text-xs text-slate-500 mt-1"></p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <select id="ordenar-clientes" aria-label="Classificar clientes" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm"><option value="nome_asc">Nome: A–Z</option><option value="nome_desc">Nome: Z–A</option><option value="vencimento_asc">Vencimento: mais próximo</option><option value="vencimento_desc">Vencimento: mais distante</option><option value="cadastro_desc">Cadastro: mais recente</option><option value="cadastro_asc">Cadastro: mais antigo</option><option value="status">Vencidos primeiro</option></select>
+            <button id="btn-limpar-todos-filtros" type="button" class="px-3 py-2 rounded-lg bg-rose-700 hover:bg-rose-600 text-sm whitespace-nowrap">Limpar filtros</button>
+            <input type="search" id="search-input" placeholder="Buscar ID, nome ou usuário..." class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm w-full md:w-80 focus:outline-none focus:border-indigo-500">
+            <select id="filtro-status" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+              <option value="">Todos os status</option>
+              <option value="em_dia">Status: Em dia</option>
+              <option value="vencido">Status: Vencido</option>
+              <option value="sem_vencimento">Status: Sem vencimento</option>
+            </select>
+            <select id="filtro-vencimento" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+              <option value="">Todos os vencimentos</option>
+              <option value="vencidos">Vencidos (inclui ontem)</option>
+              <option value="hoje">Vencendo hoje</option>
+              <option value="amanha">Vence amanhã</option>
+              <option value="proximos">Próximos dias (a partir de 2 dias)</option>
+              <option value="sem_data">Sem vencimento</option>
+            </select>
+          </div>
+        </div>
+        <div id="loading" class="p-8 text-center text-slate-400 hidden">
+          <i class="fa-solid fa-spinner fa-spin mr-2"></i> Carregando clientes...
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-300">
+            <thead class="bg-slate-950 text-slate-400 uppercase text-xs border-b border-slate-800">
+              <tr>
+                <th class="p-3">Nome</th>
+                <th class="p-3">Usuário</th>
+                <th class="p-3">Senha</th>
+                <th class="p-3">Cadastro</th>
+                <th class="p-3">Vencimento</th>
+                <th class="p-3">Vence dia</th>
+                <th class="p-3">Servidor</th>
+                <th class="p-3">Aplicativo</th>
+                <th class="p-3">MAC</th>
+                <th class="p-3">Key</th>
+                <th class="p-3">Observação / Origem</th>
+                <th class="p-3">Indicado Por</th>
+                <th class="p-3">Status</th>
+                <th class="p-3">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-clientes-body" class="divide-y divide-slate-800"></tbody>
+          </table>
+        </div>
+        <div id="sem-resultados" class="hidden p-8 text-center text-slate-500">Nenhum cliente encontrado.</div>
+        <div class="p-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <p id="paginacao-info" class="text-xs text-slate-500"></p>
+          <div class="flex gap-2">
+            <button id="btn-anterior" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm disabled:opacity-40" disabled>Anterior</button>
+            <button id="btn-proximo" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm disabled:opacity-40" disabled>Próxima</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </section>
 
-            errorDiv.classList.add('hidden');
-            botao.disabled = true;
-            botao.textContent = 'Verificando...';
+  <!-- MODAL WHATSAPP -->
+  <div id="modal-whatsapp" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-3 md:p-4 z-[70]">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 w-full max-w-2xl shadow-2xl">
+      <div class="flex justify-between items-start gap-3 mb-5 border-b border-slate-800 pb-3">
+        <div><h3 class="font-bold text-lg">Gerar mensagem para copiar</h3><p id="whatsapp-cliente-info" class="text-xs text-slate-400 mt-1"></p></div>
+        <button id="btn-fechar-whatsapp" type="button" class="text-slate-400 hover:text-white p-2" aria-label="Fechar"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+      <div class="space-y-3">
+        <div><label for="whatsapp-tipo-mensagem" class="block text-xs text-slate-400 mb-1">Escolha a mensagem</label>
+          <select id="whatsapp-tipo-mensagem" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm">
+            <option value="ativacao">Ativação / boas-vindas</option>
+            <option value="renovacao">Renovação confirmada</option>
+            <option value="vence2">Vence em 2 dias</option>
+            <option value="vence1">Vence amanhã</option>
+            <option value="vence0">Vence hoje</option>
+            <option value="venceu1">Venceu ontem</option>
+            <option value="venceu10">Vencido há 10 dias</option>
+            <option value="indicacao">Campanha de indicação</option>
+            <option value="pix">Instruções de pagamento PIX</option>
+            <option value="link">Link de pagamento</option>
+            <option value="link55">Link de pagamento R$ 55</option>
+          </select>
+        </div>
+        <div><label for="whatsapp-texto" class="block text-xs text-slate-400 mb-1">Mensagem (você pode editar antes de copiar)</label><textarea id="whatsapp-texto" rows="10" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-3 text-sm focus:outline-none focus:border-green-500"></textarea></div>
+        <p class="text-xs text-slate-500">Escolha o modelo, confira o texto e copie. Depois você pode colar a mensagem no WhatsApp ou em outro aplicativo. O painel não envia mensagens.</p>
+        <div class="flex flex-wrap justify-end gap-2"><button id="btn-cancelar-whatsapp" type="button" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">Fechar</button><button id="btn-copiar-mensagem" type="button" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold"><i class="fa-solid fa-copy mr-1"></i> Copiar mensagem</button></div>
+      </div>
+    </div>
+  </div>
 
-            try {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
-                if (error) {
-                    errorDiv.textContent = `Erro ao entrar: ${error.message}`;
-                    errorDiv.classList.remove('hidden');
-                    return;
-                }
-                if (data.session) {
-                    await supabaseClient.from('audit_acessos').insert([{ usuario: email }]);
-                    await mostrarDashboard();
-                }
-            } catch (erro) {
-                errorDiv.textContent = 'Falha de comunicação com o Supabase.';
-                errorDiv.classList.remove('hidden');
-            } finally {
-                botao.disabled = false;
-                botao.textContent = 'Entrar no Portal';
-            }
+  <!-- CARTÃO DO CLIENTE / LINHA DO TEMPO -->
+  <div id="modal-cartao-cliente" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-3 md:p-4 z-[60]">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 w-full max-w-3xl max-h-[94vh] overflow-y-auto shadow-2xl">
+      <div class="flex justify-between items-start gap-3 mb-5 border-b border-slate-800 pb-3"><div><h3 id="cartao-titulo" class="font-bold text-lg">Cartão do cliente</h3><p id="cartao-subtitulo" class="text-xs text-slate-400 mt-1"></p></div><button id="btn-fechar-cartao" type="button" class="text-slate-400 hover:text-white p-2" aria-label="Fechar"><i class="fa-solid fa-xmark text-xl"></i></button></div>
+      <form id="form-atendimento" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5"><div><label class="block text-xs text-slate-400 mb-1" for="atendimento-categoria">Tipo</label><select id="atendimento-categoria" class="campo-form"><option>Atendimento</option><option>Suporte</option><option>Financeiro</option><option>Renovação</option><option>Reclamação</option><option>Outro</option></select></div><div><label class="block text-xs text-slate-400 mb-1" for="atendimento-assunto">Assunto</label><input id="atendimento-assunto" required maxlength="200" class="campo-form" placeholder="Ex.: problema no aplicativo"></div><div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1" for="atendimento-detalhes">Anotação do atendimento</label><textarea id="atendimento-detalhes" rows="3" class="campo-form" placeholder="O que foi conversado, orientação dada e próximo passo..."></textarea></div><div class="md:col-span-2 flex justify-end"><button id="btn-salvar-atendimento" type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold">Registrar atendimento</button></div></form>
+      <div class="flex items-center justify-between gap-2 mb-3"><h4 class="font-semibold">Linha do tempo</h4><span id="cartao-qtd-atendimentos" class="text-xs text-slate-400"></span></div><div id="cartao-linha-tempo" class="space-y-3"><p class="text-sm text-slate-500">Carregando histórico...</p></div>
+    </div>
+  </div>
+
+  <!-- MODAL CADASTRO -->
+  <div id="modal-cliente" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-3 md:p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 w-full max-w-4xl max-h-[94vh] overflow-y-auto shadow-2xl">
+      <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
+        <div>
+          <h3 id="titulo-modal-cliente" class="font-bold text-lg">Cadastrar Novo Cliente</h3>
+        </div>
+        <button id="btn-fechar-modal" type="button" class="text-slate-400 hover:text-white p-2" aria-label="Fechar"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+      <form id="form-novo-cliente" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div>
+          <label for="campo-nome" class="block text-xs text-slate-400 mb-1">Nome *</label>
+          <input id="campo-nome" type="text" name="nome" required maxlength="200" class="campo-form">
+        </div>
+        <div>
+          <label for="campo-usuario" class="block text-xs text-slate-400 mb-1">Usuário</label>
+          <input id="campo-usuario" type="text" name="usuario" class="campo-form">
+        </div>
+        <div>
+          <label for="campo-senha" class="block text-xs text-slate-400 mb-1">Senha do cliente</label>
+          <input id="campo-senha" type="password" name="senha" autocomplete="new-password" class="campo-form">
+          <p class="text-[11px] text-slate-500 mt-1">A senha será exibida na tabela para usuários autorizados do painel.</p>
+        </div>
+        <div>
+          <label for="campo-data-cadastro" class="block text-xs text-slate-400 mb-1">Data de cadastro *</label>
+          <input id="campo-data-cadastro" type="date" name="data_cadastro" required class="campo-form">
+        </div>
+        <div>
+          <label for="campo-vencimento" class="block text-xs text-slate-400 mb-1">Vencimento</label>
+          <input id="campo-vencimento" type="date" name="vencimento" class="campo-form">
+        </div>
+        <div>
+          <label for="campo-vencedia" class="block text-xs text-slate-400 mb-1">Vence dia</label>
+          <input id="campo-vencedia" type="number" name="vencedia" min="1" max="31" class="campo-form">
+        </div>
+        <div>
+          <label for="campo-servidor" class="block text-xs text-slate-400 mb-1">Servidor</label>
+          <input id="campo-servidor" type="text" name="servidor" class="campo-form">
+        </div>
+        <div>
+          <label for="campo-dispositivo" class="block text-xs text-slate-400 mb-1">Dispositivo</label>
+          <input id="campo-dispositivo" type="text" name="dispositivo" class="campo-form">
+        </div>
+        <div>
+          <label for="campo-aplicativo" class="block text-xs text-slate-400 mb-1">Aplicativo</label>
+          <input id="campo-aplicativo" type="text" name="aplicativo" class="campo-form">
+        </div>
+        <div>
+          <label for="campo-observacao" class="block text-xs text-slate-400 mb-1">Observação / Origem</label>
+          <input id="campo-observacao" type="text" name="observacao" class="campo-form" placeholder="Ex.: WS">
+        </div>
+        <div>
+          <label for="campo-indicado" class="block text-xs text-slate-400 mb-1">Indicado Por</label>
+          <select id="campo-indicado" name="indicado_por" class="campo-form">
+            <option value="WS">WS</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Status automático</label>
+          <input id="campo-status" type="hidden" name="status" value="Sem vencimento">
+          <div id="status-calculado-form" class="campo-form text-sm text-slate-300">Será calculado pela data de vencimento.</div>
+          <p class="text-[11px] text-slate-500 mt-1">Em dia inclui vencimento hoje ou futuro. Vencido significa vencimento anterior a hoje.</p>
+        </div>
+        <div>
+          <label for="campo-emdia" class="block text-xs text-slate-400 mb-1">Em dia?</label>
+          <select id="campo-emdia" name="EmDia?" class="campo-form">
+            <option value="" selected>Sem vencimento</option>
+            <option value="Sim">Sim</option>
+            <option value="Não">Não</option>
+          </select>
+          <p class="text-[11px] text-slate-500 mt-1">Calculado automaticamente conforme a data de vencimento.</p>
+        </div>
+        <div>
+          <label for="campo-macvence" class="block text-xs text-slate-400 mb-1">Vencimento MAC</label>
+          <input id="campo-macvence" type="date" name="macvence" class="campo-form">
+        </div>
+        <div>
+          <label for="campo-mac" class="block text-xs text-slate-400 mb-1">MAC</label>
+          <input id="campo-mac" type="text" name="mac" class="campo-form">
+        </div>
+        <div>
+          <label for="campo-key" class="block text-xs text-slate-400 mb-1">Key</label>
+          <input id="campo-key" type="text" name="Key" class="campo-form">
+        </div>
+        <div class="md:col-span-2 xl:col-span-3">
+          <label for="campo-link" class="block text-xs text-slate-400 mb-1">Link M3U</label>
+          <input id="campo-link" type="url" name="link_m3u" class="campo-form">
+        </div>
+        <div class="md:col-span-2 xl:col-span-3">
+          <label for="campo-metodo" class="block text-xs text-slate-400 mb-1">Método Envio</label>
+          <input id="campo-metodo" type="text" name="Método Envio" class="campo-form">
+        </div>
+        <div class="md:col-span-2 xl:col-span-3 flex justify-end gap-3 mt-3">
+          <button id="btn-cancelar" type="button" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm">Cancelar</button>
+          <button id="btn-salvar-cliente" type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold">
+            <i class="fa-solid fa-floppy-disk mr-1"></i> Salvar Cliente
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    .campo-form {
+      width: 100%;
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: .5rem;
+      padding: .6rem .75rem;
+      font-size: .875rem;
+      color: #f1f5f9;
+      outline: none;
+    }
+    .campo-form:focus { border-color: #6366f1; }
+  </style>
+
+  <script>
+    // Conexão Supabase fornecida pelo proprietário do projeto.
+    const SUPABASE_URL = 'https://kwlmkocvleqiehexzwzw.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_VE1-pvBDODXU3lwtsXn05g_QotC3efX';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+    const PAGE_SIZE = 50;
+    let clientesCache = [];
+    let paginaAtual = 0;
+    let clienteEditandoId = null;
+    let graficoVencimentos = null;
+    let diaSelecionadoGrafico = null;
+    let graficosExtras = {};
+    let filtroGrafico = null;
+    let renovacoesCache = [];
+    let clienteCartaoAtual = null;
+    let graficoFinanceiroMensal = null;
+    let graficoEvolucaoBase = null;
+    const VALOR_OPERACAO = 26;
+
+    const $ = (id) => document.getElementById(id);
+    if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
+    const hojeLocalISO = () => {
+      const agora = new Date();
+      const local = new Date(agora.getTime() - agora.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    };
+
+    function mostrarMensagem(mensagem, tipo = 'info') {
+      const el = $('app-message');
+      el.textContent = mensagem;
+      el.className = 'rounded-lg border px-4 py-3 text-sm';
+      if (tipo === 'erro') el.classList.add('border-red-800', 'bg-red-950', 'text-red-300');
+      else if (tipo === 'sucesso') el.classList.add('border-emerald-800', 'bg-emerald-950', 'text-emerald-300');
+      else el.classList.add('border-slate-700', 'bg-slate-900', 'text-slate-300');
+      el.classList.remove('hidden');
+    }
+
+    function esconderMensagem() {
+      $('app-message').classList.add('hidden');
+    }
+
+    function adicionarCelula(tr, valor, classes = 'p-3') {
+      const td = document.createElement('td');
+      td.className = classes;
+      td.textContent = valor === null || valor === undefined || valor === '' ? '-' : String(valor);
+      tr.appendChild(td);
+    }
+
+    function formatarData(valor) {
+      if (!valor) return '-';
+      // Para date (YYYY-MM-DD), evita conversão de fuso horário.
+      const texto = String(valor);
+      const m = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (!m) return texto;
+      return `${m[3]}/${m[2]}/${m[1]}`;
+    }
+
+    function formatarDataHora(valor) {
+      if (!valor) return '-';
+      const data = new Date(valor);
+      if (Number.isNaN(data.getTime())) return String(valor);
+      return data.toLocaleString('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).replace(',', ' às');
+    }
+
+    function normalizar(valor) {
+      return String(valor ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    }
+
+    // Calcula os dias entre hoje e o vencimento usando datas civis,
+    // sem diferenças causadas pelo fuso horário.
+    function calcularDiasParaVencer(vencimento) {
+      if (!vencimento) return null;
+
+      const texto = String(vencimento).slice(0, 10);
+      const correspondencia = texto.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!correspondencia) return null;
+
+      const ano = Number(correspondencia[1]);
+      const mes = Number(correspondencia[2]);
+      const dia = Number(correspondencia[3]);
+      const dataVencimento = new Date(Date.UTC(ano, mes - 1, dia));
+
+      // Evita aceitar datas inválidas, como 31/02.
+      if (
+        dataVencimento.getUTCFullYear() !== ano ||
+        dataVencimento.getUTCMonth() !== mes - 1 ||
+        dataVencimento.getUTCDate() !== dia
+      ) return null;
+
+      const hojePartes = hojeLocalISO().split('-').map(Number);
+      const hoje = new Date(Date.UTC(hojePartes[0], hojePartes[1] - 1, hojePartes[2]));
+
+      return Math.round((dataVencimento.getTime() - hoje.getTime()) / 86400000);
+    }
+
+    // EmDia? é Sim para vencimento hoje ou futuro; Não para vencimento passado.
+    // Sem vencimento fica sem valor.
+    function calcularEmDia(vencimento) {
+      const dias = calcularDiasParaVencer(vencimento);
+      if (dias === null) return '';
+      return dias >= 0 ? 'Sim' : 'Não';
+    }
+
+    // Status exibido na tabela é uma situação calculada, não o status cadastral.
+    function calcularSituacaoVencimento(vencimento) {
+      const dias = calcularDiasParaVencer(vencimento);
+      if (dias === null) return 'Sem vencimento';
+      if (dias === 10) return 'Vence em 10 dias';
+      if (dias === 2) return 'Vence em dois dias';
+      if (dias === 1) return 'Vence amanhã';
+      if (dias === 0) return 'Vence hoje';
+      if (dias === -1) return 'Venceu ontem';
+      if (dias < 0) return 'Vencido';
+      return 'Em dia';
+    }
+
+    // O campo status do banco passa a representar a situação de vencimento.
+    // Vencimento hoje ou futuro = Em dia; data passada = Vencido; vazio = Sem vencimento.
+    function calcularStatusCliente(vencimento) {
+      const dias = calcularDiasParaVencer(vencimento);
+      if (dias === null) return 'Sem vencimento';
+      return dias < 0 ? 'Vencido' : 'Em dia';
+    }
+
+    function statusNormalizadoCliente(cliente) {
+      return calcularStatusCliente(cliente?.vencimento);
+    }
+
+    function atualizarCampoEmDia() {
+      const vencimento = $('campo-vencimento').value;
+      $('campo-emdia').value = calcularEmDia(vencimento);
+      // O campo vencedia é sempre derivado da data de vencimento.
+      $('campo-vencedia').value = vencimento ? Number(vencimento.slice(8, 10)) : '';
+      const statusCalculado = calcularStatusCliente(vencimento);
+      $('campo-status').value = statusCalculado;
+      $('status-calculado-form').textContent = statusCalculado;
+      $('status-calculado-form').className = 'campo-form text-sm font-semibold ' + (statusCalculado === 'Vencido' ? 'text-red-300' : statusCalculado === 'Em dia' ? 'text-emerald-300' : 'text-slate-300');
+    }
+
+    async function fazerLogin(evento) {
+      evento.preventDefault();
+      const email = $('login-email').value.trim();
+      const password = $('login-senha').value;
+      const erro = $('login-error');
+      const botao = $('btn-login');
+      erro.classList.add('hidden');
+      botao.disabled = true;
+      botao.textContent = 'Entrando...';
+
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+      botao.disabled = false;
+      botao.textContent = 'Entrar no painel';
+
+      if (error) {
+        erro.textContent = 'Não foi possível entrar. Confira e-mail e senha. Detalhe: ' + error.message;
+        erro.classList.remove('hidden');
+        return;
+      }
+
+      // A falha no registro de auditoria não impede o login.
+      try {
+        await supabaseClient.from('audit_acessos').insert([{ usuario: email }]);
+      } catch (e) {
+        console.warn('Não foi possível registrar o acesso:', e);
+      }
+      $('login-senha').value = '';
+      await mostrarDashboard();
+    }
+
+    async function fazerLogout() {
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) mostrarMensagem('Não foi possível encerrar a sessão: ' + error.message, 'erro');
+      $('dashboard-screen').classList.add('hidden');
+      $('login-screen').classList.remove('hidden');
+    }
+
+    async function mostrarDashboard() {
+      $('login-screen').classList.add('hidden');
+      $('dashboard-screen').classList.remove('hidden');
+      await carregarClientes();
+    }
+
+    async function carregarClientes() {
+      esconderMensagem();
+      $('loading').classList.remove('hidden');
+      $('tabela-clientes-body').replaceChildren();
+
+      // Busca em lotes para não depender do limite padrão de uma única consulta.
+      let todos = [];
+      let inicio = 0;
+      const tamanhoLote = 1000;
+
+      try {
+        while (true) {
+          const { data, error } = await supabaseClient
+            .from('clientes_wsplay')
+            .select('idc,nome,usuario,senha,telefone,vencimento,vencedia,data_cadastro,servidor,dispositivo,aplicativo,observacao,indicado_por,macvence,mac,"Key",link_m3u,status,"EmDia?","Método Envio"')
+            .order('idc', { ascending: true })
+            .range(inicio, inicio + tamanhoLote - 1);
+
+          if (error) throw error;
+          todos = todos.concat(data || []);
+          if (!data || data.length < tamanhoLote) break;
+          inicio += tamanhoLote;
         }
 
-        async function fazerLogout() {
-            await supabaseClient.auth.signOut();
-            document.getElementById('dashboard-screen').classList.add('hidden');
-            document.getElementById('login-screen').classList.remove('hidden');
-        }
-
-        async function mostrarDashboard() {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('dashboard-screen').classList.remove('hidden');
-            await carregarDadosFinanceiros();
-            await carregarClientes();
-        }
-
-        async function carregarDadosFinanceiros() {
-            try {
-                const { data, error } = await supabaseClient.from('historico_pagamentos').select('valor');
-                if (!error && data) {
-                    faturamentoTotal = data.reduce((soma, p) => soma + Number(p.valor || 0), 0);
-                }
-            } catch (e) {
-                faturamentoTotal = 0;
-            }
-        }
-
-        async function carregarClientes() {
-            const tbody = document.getElementById('tabela-clientes-body');
-            tbody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-slate-400">Carregando clientes...</td></tr>`;
-
-            try {
-                const { data, error } = await supabaseClient.from('clientes_wsplay').select('*');
-                if (error) {
-                    tbody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-red-400">Erro ao carregar clientes.</td></tr>`;
-                    return;
-                }
-                clientesCache = data || [];
-                aplicarFiltros();
-                atualizarListaIndicados(clientesCache);
-                renderizarGraficos(clientesCache);
-            } catch (erro) {
-                tbody.innerHTML = `<tr><td colspan="12" class="p-4 text-center text-red-400">Falha de comunicação.</td></tr>`;
-            }
-        }
-
-        function calcularDiasDiferenca(dataVencStr) {
-            if (!dataVencStr) return 999;
-            const hoje = new Date();
-            hoje.setHours(0,0,0,0);
-            const venc = new Date(dataVencStr + 'T00:00:00');
-            return Math.round((venc - hoje) / (1000 * 60 * 60 * 24));
-        }
-
-        function avaliarStatusCliente(dataVencStr) {
-            const dias = calcularDiasDiferenca(dataVencStr);
-            let status = 'Ativo';
-            let emDia = 'Sim';
-
-            if (dias === 0) { status = 'Vence Hoje!'; emDia = 'Sim'; }
-            else if (dias === 1) { status = 'Vence Amanhã'; emDia = 'Sim'; }
-            else if (dias === 2) { status = 'Vence em 2 Dias'; emDia = 'Sim'; }
-            else if (dias === -1) { status = 'Venceu Ontem'; emDia = 'Não'; }
-            else if (dias <= -10) { status = 'Venceu há 10 Dias'; emDia = 'Não'; }
-            else if (dias < 0) { status = 'Vencido'; emDia = 'Não'; }
-
-            return { status, emDia, dias };
-        }
-
-        function renderizarDashboard(dados) {
-            document.getElementById('kpi-total').textContent = dados.length;
-            
-            // Conta apenas quem está em dia (sem vencer) para os ativos
-            const ativosEmDia = dados.filter(c => {
-                const avaliacao = avaliarStatusCliente(c.vencimento);
-                return avaliacao.emDia === 'Sim';
-            }).length;
-
-            document.getElementById('kpi-ativos').textContent = ativosEmDia;
-            document.getElementById('kpi-faturamento').textContent = faturamentoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-            const servidoresUnicos = [...new Set(dados.map(c => c.servidor).filter(Boolean))];
-            document.getElementById('kpi-servidores').textContent = servidoresUnicos.length;
-
-            const tbody = document.getElementById('tabela-clientes-body');
-            tbody.innerHTML = '';
-
-            dados.forEach(c => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-900/50 transition-all border-b border-slate-800/50';
-
-                const avaliacao = avaliarStatusCliente(c.vencimento);
-                let badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-indigo-500/10 text-indigo-400">${avaliacao.status}</span>`;
-                
-                if (avaliacao.dias === 0) badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-amber-500/20 text-amber-300 font-bold animate-pulse">${avaliacao.status}</span>`;
-                else if (avaliacao.dias < 0) badgeStatus = `<span class="px-2 py-1 rounded text-xs bg-rose-500/20 text-rose-300 font-bold">${avaliacao.status}</span>`;
-
-                const badgeEmDia = avaliacao.emDia === 'Sim' 
-                    ? `<span class="px-2 py-1 rounded text-xs bg-emerald-500/10 text-emerald-400 font-semibold">Sim</span>`
-                    : `<span class="px-2 py-1 rounded text-xs bg-rose-500/10 text-rose-400 font-semibold">Não</span>`;
-
-                const foneLimpo = c.telefone ? c.telefone.replace(/\D/g, '') : '';
-                const msgZap = encodeURIComponent(`Olá ${c.nome || ''}, seu acesso ao WsPlay venceu ou está vencendo em ${c.vencimento || ''}. Regularize sua renovação via PIX para continuar aproveitando!`);
-
-                const valores = [
-                    c.nome || '',
-                    c.usuario || '-',
-                    c.telefone || '-',
-                    c.vencimento || '-',
-                    c.vencedia || '-',
-                    c.servidor || '-',
-                    c.aplicativo || '-',
-                    c.observacao || '-',
-                    c.indicado_por || '-'
-                ];
-
-                valores.forEach((valor, indice) => {
-                    const td = document.createElement('td');
-                    td.className = 'p-3';
-                    if (indice === 0) td.classList.add('font-medium', 'text-white');
-                    td.textContent = valor;
-                    tr.appendChild(td);
-                });
-
-                const tdStatus = document.createElement('td');
-                tdStatus.className = 'p-3';
-                tdStatus.innerHTML = badgeStatus;
-                tr.appendChild(tdStatus);
-
-                const tdEmDia = document.createElement('td');
-                tdEmDia.className = 'p-3';
-                tdEmDia.innerHTML = badgeEmDia;
-                tr.appendChild(tdEmDia);
-
-                const tdAcoes = document.createElement('td');
-                tdAcoes.className = 'p-3 text-center flex items-center justify-center gap-1.5';
-                tdAcoes.innerHTML = `
-                    <button onclick="renovarCliente(${c.idc}, '${c.vencimento || ''}', '${c.nome || ''}')" title="Renovar +30 Dias" class="p-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded-lg transition-all text-xs px-2 font-semibold">
-                        <i class="fa-solid fa-rotate"></i>
-                    </button>
-                    <button onclick="abrirModalHistorico(${c.idc}, '${c.nome || ''}')" title="Ver Histórico / Mudanças" class="p-1.5 bg-sky-600/20 text-sky-400 hover:bg-sky-600 hover:text-white rounded-lg transition-all text-xs px-2 font-semibold">
-                        <i class="fa-solid fa-clock-rotate-left"></i>
-                    </button>
-                    ${foneLimpo ? `<a href="https://wa.me/55${foneLimpo}?text=${msgZap}" target="_blank" title="Enviar WhatsApp" class="p-1.5 bg-emerald-600 text-white hover:bg-emerald-500 rounded-lg transition-all"><i class="fa-brands fa-whatsapp text-sm"></i></a>` : ''}
-                `;
-                tr.appendChild(tdAcoes);
-
-                tbody.appendChild(tr);
-            });
-        }
-
-        function filtrarPorVencimento(tipo) {
-            filtroAtivoVencimento = tipo;
-            aplicarFiltros();
-        }
-
-        function aplicarFiltros() {
-            const termo = document.getElementById('search-input').value.toLowerCase().trim();
-
-            const filtrados = clientesCache.filter(c => {
-                const matchTexto = (c.nome && String(c.nome).toLowerCase().includes(termo)) || (c.telefone && String(c.telefone).includes(termo));
-                if (!matchTexto) return false;
-
-                const dias = calcularDiasDiferenca(c.vencimento);
-                if (filtroAtivoVencimento === 'hoje') return dias === 0;
-                if (filtroAtivoVencimento === 'amanha') return dias === 1;
-                if (filtroAtivoVencimento === '2dias') return dias === 2;
-                if (filtroAtivoVencimento === 'ontem') return dias === -1;
-                if (filtroAtivoVencimento === '10dias') return dias <= -10;
-                return true;
-            });
-
-            renderizarDashboard(filtrados);
-        }
-
-        function ordenarTabela(coluna) {
-            ordemAscendente = !ordemAscendente;
-            clientesCache.sort((a, b) => {
-                let valA = a[coluna] || '';
-                let valB = b[coluna] || '';
-                if (valA < valB) return ordemAscendente ? -1 : 1;
-                if (valA > valB) return ordemAscendente ? 1 : -1;
-                return 0;
-            });
-            aplicarFiltros();
-        }
-
-        async function renovarCliente(idc, dataAtualStr, nomeCliente) {
-            let novaData;
-            const hoje = new Date();
-            if (dataAtualStr) {
-                const atual = new Date(dataAtualStr + 'T00:00:00');
-                if (atual > hoje) {
-                    atual.setDate(atual.getDate() + 30);
-                    novaData = atual.toISOString().split('T')[0];
-                } else {
-                    hoje.setDate(hoje.getDate() + 30);
-                    novaData = hoje.toISOString().split('T')[0];
-                }
-            } else {
-                hoje.setDate(hoje.getDate() + 30);
-                novaData = hoje.toISOString().split('T')[0];
-            }
-
-            const avaliacao = avaliarStatusCliente(novaData);
-            const { error: errUpdate } = await supabaseClient.from('clientes_wsplay').update({ vencimento: novaData, status: avaliacao.status, 'emdia?': avaliacao.emDia }).eq('idc', idc);
-            const { error: errPay } = await supabaseClient.from('historico_pagamentos').insert([{ idc: idc, nome_cliente: nomeCliente, valor: 26.00, tipo: 'renovacao' }]);
-            await supabaseClient.from('historico_chamados').insert([{ idc: idc, nome_cliente: nomeCliente, descricao_mudanca: `Renovação realizada. Novo vencimento: ${novaData}` }]);
-
-            if (errUpdate || errPay) {
-                alert('Erro ao processar renovação.');
-            } else {
-                await carregarDadosFinanceiros();
-                await carregarClientes();
-                alert('Cliente renovado com sucesso!');
-            }
-        }
-
-        async function abrirModalHistorico(idc, nome) {
-            clienteSelecionadoId = idc;
-            clienteSelecionadoNome = nome;
-            document.getElementById('hist-idc').value = idc;
-            document.getElementById('titulo-modal-historico').textContent = `Histórico / Mudanças: ${nome}`;
-            document.getElementById('modal-historico').classList.remove('hidden');
-            document.getElementById('modal-historico').classList.add('flex');
-            await carregarHistoricoCliente(idc);
-        }
-
-        function fecharModalHistorico() {
-            document.getElementById('modal-historico').classList.remove('flex');
-            document.getElementById('modal-historico').classList.add('hidden');
-        }
-
-        async function carregarHistoricoCliente(idc) {
-            const container = document.getElementById('lista-historico-container');
-            container.innerHTML = `<p class="text-sm text-slate-400 text-center py-2">Buscando histórico...</p>`;
-
-            const { data, error } = await supabaseClient.from('historico_chamados').select('*').eq('idc', idc).order('data_registro', { ascending: false });
-
-            if (error || !data || data.length === 0) {
-                container.innerHTML = `<p class="text-sm text-slate-500 text-center py-4">Nenhum registro de alteração ainda.</p>`;
-                return;
-            }
-
-            container.innerHTML = '';
-            data.forEach(h => {
-                const dataFormatada = new Date(h.data_registro).toLocaleString('pt-BR');
-                container.innerHTML += `
-                    <div class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-xs space-y-1">
-                        <div class="text-slate-400 font-medium"><i class="fa-regular fa-clock"></i> ${dataFormatada}</div>
-                        <div class="text-slate-200">${h.descricao_mudanca}</div>
-                    </div>
-                `;
-            });
-        }
-
-        async function adicionarHistorico(e) {
-            e.preventDefault();
-            const descricao = document.getElementById('nova-descricao-hist').value;
-
-            const { error } = await supabaseClient.from('historico_chamados').insert([{
-                idc: clienteSelecionadoId,
-                nome_cliente: clienteSelecionadoNome,
-                descricao_mudanca: descricao
-            }]);
-
+        // Sincroniza a coluna status no Supabase para refletir o vencimento atual.
+        // A tabela continua exibindo o status calculado mesmo se a política do banco bloquear a atualização.
+        const paraSincronizar = todos.filter(c => String(c.status ?? '') !== calcularStatusCliente(c.vencimento));
+        for (let i = 0; i < paraSincronizar.length; i += 20) {
+          const lote = paraSincronizar.slice(i, i + 20);
+          const resultados = await Promise.all(lote.map(async c => {
+            const statusCalculado = calcularStatusCliente(c.vencimento);
+            const { error } = await supabaseClient.from('clientes_wsplay').update({ status: statusCalculado }).eq('idc', c.idc);
             if (error) {
-                alert('Erro ao registrar histórico: ' + error.message);
-            } else {
-                document.getElementById('nova-descricao-hist').value = '';
-                await carregarHistoricoCliente(clienteSelecionadoId);
+              console.warn(`Não foi possível sincronizar status do cliente ${c.idc}:`, error.message);
+              return false;
             }
+            c.status = statusCalculado;
+            return true;
+          }));
         }
+        clientesCache = todos;
+        atualizarIndicadores();
+        atualizarIndicadoresRapidos();
+        atualizarListaIndicados();
+        renderizarTabela();
+        atualizarTodosGraficos();
+        await carregarAnaliticosFinanceiros();
+      } catch (erro) {
+        console.error('Erro ao carregar clientes:', erro);
+        mostrarMensagem('Erro ao carregar clientes. Verifique as permissões RLS e os nomes das colunas no Supabase. Detalhe: ' + erro.message, 'erro');
+      } finally {
+        $('loading').classList.add('hidden');
+      }
+    }
 
-        function renderizarGraficos(dados) {
-            // Gráfico Vence Dia (Concentração de vencimentos no mês)
-            const venceDiaCount = {};
-            dados.forEach(c => { const dia = c.vencedia ? `Dia ${c.vencedia}` : 'Não Definido'; venceDiaCount[dia] = (venceDiaCount[dia] || 0) + 1; });
+    function atualizarIndicadores() {
+      const total = clientesCache.length;
+      const ativos = clientesCache.filter(c => calcularStatusCliente(c.vencimento) === 'Em dia').length;
+      const vencidos = clientesCache.filter(c => calcularStatusCliente(c.vencimento) === 'Vencido').length;
+      const servidores = new Set(clientesCache.map(c => String(c.servidor ?? '').trim()).filter(Boolean));
 
-            if (chartVenceDiaInstance) chartVenceDiaInstance.destroy();
-            const ctxDia = document.getElementById('graficoVenceDia').getContext('2d');
-            chartVenceDiaInstance = new Chart(ctxDia, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(venceDiaCount),
-                    datasets: [{ label: 'Clientes', data: Object.values(venceDiaCount), backgroundColor: '#10b981', borderRadius: 6 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
-            });
+      $('kpi-total').textContent = total;
+      $('kpi-ativos').textContent = ativos;
+      $('kpi-inativos').textContent = vencidos;
+      $('kpi-servidores').textContent = servidores.size;
+    }
 
-            // Servidores
-            const servidoresCount = {};
-            dados.forEach(c => { const s = c.servidor || 'Não Definido'; servidoresCount[s] = (servidoresCount[s] || 0) + 1; });
-            
-            if (chartServidoresInstance) chartServidoresInstance.destroy();
-            const ctxServ = document.getElementById('graficoServidores').getContext('2d');
-            chartServidoresInstance = new Chart(ctxServ, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(servidoresCount),
-                    datasets: [{ data: Object.values(servidoresCount), backgroundColor: ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'] }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
-            });
+    function atualizarListaIndicados() {
+      const select = $('campo-indicado');
+      const valorAnterior = select.value;
+      const opcoes = new Set(['WS']);
+      clientesCache.forEach(c => {
+        const obs = String(c.observacao ?? '').trim();
+        if (obs) opcoes.add(obs);
+      });
 
-            // Aplicativos
-            const appsCount = {};
-            dados.forEach(c => { const a = c.aplicativo || 'Outros'; appsCount[a] = (appsCount[a] || 0) + 1; });
+      select.replaceChildren();
+      [...opcoes].sort((a, b) => {
+        if (a === 'WS') return -1;
+        if (b === 'WS') return 1;
+        return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+      }).forEach(obs => {
+        const option = document.createElement('option');
+        option.value = obs;
+        option.textContent = obs;
+        select.appendChild(option);
+      });
 
-            if (chartAplicativosInstance) chartAplicativosInstance.destroy();
-            const ctxApp = document.getElementById('graficoAplicativos').getContext('2d');
-            chartAplicativosInstance = new Chart(ctxApp, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(appsCount),
-                    datasets: [{ label: 'Clientes', data: Object.values(appsCount), backgroundColor: '#6366f1', borderRadius: 6 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
-            });
+      if ([...opcoes].includes(valorAnterior)) select.value = valorAnterior;
+      else select.value = 'WS';
+    }
+
+    function obterClientesFiltrados() {
+      const termo = normalizar($('search-input').value);
+      const filtroStatus = $('filtro-status').value;
+      const filtroVencimento = $('filtro-vencimento').value;
+
+      return clientesCache.filter(c => {
+        const correspondeTexto = !termo || [
+          c.idc, c.nome, c.usuario, c.senha, c.observacao, c.indicado_por,
+          c.servidor, c.aplicativo, c.mac, c.Key, c.vencedia
+        ].some(v => normalizar(v).includes(termo));
+
+        const statusCliente = calcularStatusCliente(c.vencimento);
+        const ativo = statusCliente === 'Em dia';
+        const correspondeStatus = !filtroStatus ||
+          (filtroStatus === 'em_dia' && statusCliente === 'Em dia') ||
+          (filtroStatus === 'vencido' && statusCliente === 'Vencido') ||
+          (filtroStatus === 'sem_vencimento' && statusCliente === 'Sem vencimento');
+
+        const dias = calcularDiasParaVencer(c.vencimento);
+        const correspondeVencimento = !filtroVencimento || filtroVencimento === 'todos' ||
+          (filtroVencimento === 'ontem' && dias === -1) ||
+          (filtroVencimento === 'vencidos' && dias !== null && dias < 0) ||
+          (filtroVencimento === 'hoje' && dias === 0) ||
+          (filtroVencimento === 'amanha' && dias === 1) ||
+          (filtroVencimento === 'dois_dias' && dias === 2) ||
+          (filtroVencimento === 'em_dia' && dias !== null && dias > 2) ||
+          (filtroVencimento === 'proximos' && dias !== null && dias >= 2) ||
+          (filtroVencimento === 'sem_data' && dias === null);
+
+        const correspondeDiaGrafico = diaSelecionadoGrafico === null || (ativo && dias !== null && Number(String(c.vencimento).slice(8, 10)) === diaSelecionadoGrafico);
+        let correspondeFiltroGrafico = true;
+        if (filtroGrafico) {
+          if (filtroGrafico.tipo === 'cadastroData') correspondeFiltroGrafico = String(c.data_cadastro || '').slice(0, 10) === filtroGrafico.valor;
+          else if (filtroGrafico.tipo === 'aplicativo') correspondeFiltroGrafico = normalizar(c.aplicativo || 'Não informado') === filtroGrafico.valor;
+          else if (filtroGrafico.tipo === 'servidor') correspondeFiltroGrafico = normalizar(c.servidor || 'Não informado') === filtroGrafico.valor;
+          else if (filtroGrafico.tipo === 'indicador') correspondeFiltroGrafico = normalizar(c.indicado_por || 'Não informado') === filtroGrafico.valor;
+          else if (filtroGrafico.tipo === 'cadastroStatus') correspondeFiltroGrafico = filtroGrafico.valor === 'emdia' ? statusCliente === 'Em dia' : filtroGrafico.valor === 'vencido' ? statusCliente === 'Vencido' : statusCliente === 'Sem vencimento';
+          else if (filtroGrafico.tipo === 'vencimentoRapido') correspondeFiltroGrafico = ativo && ((filtroGrafico.valor === 'vencidos' && dias !== null && dias < 0) || (filtroGrafico.valor === 'em_dia' && dias !== null && dias >= 0) || (filtroGrafico.valor === 'hoje' && dias === 0) || (filtroGrafico.valor === 'amanha' && dias === 1) || (filtroGrafico.valor === 'dois_dias' && dias === 2));
+          else if (filtroGrafico.tipo === 'vencimentoDia') correspondeFiltroGrafico = ativo && dias !== null && Number(String(c.vencimento).slice(8, 10)) === Number(filtroGrafico.valor);
+          else if (filtroGrafico.tipo === 'matrizCadastroMes') correspondeFiltroGrafico = String(c.data_cadastro || '').slice(0,7) === filtroGrafico.valor;
+          else if (filtroGrafico.tipo === 'matrizCadastroDia') correspondeFiltroGrafico = String(c.data_cadastro || '').slice(0,10) === filtroGrafico.valor;
+          else if (filtroGrafico.tipo === 'matrizVencidoMes') correspondeFiltroGrafico = statusCliente === 'Vencido' && String(c.vencimento || '').slice(0,7) === filtroGrafico.valor;
+          else if (filtroGrafico.tipo === 'matrizVencidoDia') correspondeFiltroGrafico = statusCliente === 'Vencido' && String(c.vencimento || '').slice(0,10) === filtroGrafico.valor;
         }
+        return correspondeTexto && correspondeStatus && correspondeVencimento && correspondeDiaGrafico && correspondeFiltroGrafico;
+      });
+    }
 
-        function atualizarVenceDiaAuto() {
-            const dataVenc = document.getElementById('input-vencimento').value;
-            if (dataVenc) {
-                const dia = new Date(dataVenc + 'T00:00:00').getDate();
-                document.getElementById('input-vencedia').value = dia;
-            }
+    function renderizarTabela() {
+      const filtrados = obterClientesFiltrados();
+      const modoOrdenacao = $('ordenar-clientes')?.value || 'nome_asc';
+      filtrados.sort((a,b) => {
+        const texto = (v) => String(v || '').trim().toLocaleLowerCase('pt-BR');
+        const data = (v) => dataISOValida(v) || '9999-12-31';
+        if (modoOrdenacao === 'nome_asc') return texto(a.nome).localeCompare(texto(b.nome), 'pt-BR');
+        if (modoOrdenacao === 'nome_desc') return texto(b.nome).localeCompare(texto(a.nome), 'pt-BR');
+        if (modoOrdenacao === 'vencimento_asc') return data(a.vencimento).localeCompare(data(b.vencimento)) || texto(a.nome).localeCompare(texto(b.nome),'pt-BR');
+        if (modoOrdenacao === 'vencimento_desc') return data(b.vencimento).localeCompare(data(a.vencimento)) || texto(a.nome).localeCompare(texto(b.nome),'pt-BR');
+        if (modoOrdenacao === 'cadastro_desc') return data(b.data_cadastro).localeCompare(data(a.data_cadastro)) || texto(a.nome).localeCompare(texto(b.nome),'pt-BR');
+        if (modoOrdenacao === 'cadastro_asc') return data(a.data_cadastro).localeCompare(data(b.data_cadastro)) || texto(a.nome).localeCompare(texto(b.nome),'pt-BR');
+        if (modoOrdenacao === 'status') return (calcularDiasParaVencer(a.vencimento) ?? 99999) - (calcularDiasParaVencer(b.vencimento) ?? 99999) || texto(a.nome).localeCompare(texto(b.nome),'pt-BR');
+        return 0;
+      });
+      const totalPaginas = Math.max(1, Math.ceil(filtrados.length / PAGE_SIZE));
+      paginaAtual = Math.min(paginaAtual, totalPaginas - 1);
+      const inicio = paginaAtual * PAGE_SIZE;
+      const pagina = filtrados.slice(inicio, inicio + PAGE_SIZE);
+      const tbody = $('tabela-clientes-body');
+      tbody.replaceChildren();
+
+      pagina.forEach(c => {
+        const tr = document.createElement('tr');
+        const dias = calcularDiasParaVencer(c.vencimento);
+        const situacao = calcularSituacaoVencimento(c.vencimento);
+        // Cores da linha para facilitar a leitura operacional da base.
+        if (dias !== null && dias < -1) tr.className = 'bg-red-950/45 hover:bg-red-900/50 transition-colors';
+        else if (dias === -1) tr.className = 'bg-orange-950/45 hover:bg-orange-900/50 transition-colors';
+        else if (dias === 0) tr.className = 'bg-yellow-950/45 hover:bg-yellow-900/50 transition-colors';
+        else if (dias === 1) tr.className = 'bg-green-950/40 hover:bg-green-900/50 transition-colors';
+        else if (dias === 2) tr.className = 'bg-blue-950/45 hover:bg-blue-900/50 transition-colors';
+        else tr.className = 'hover:bg-slate-800/50 transition-colors';
+
+        adicionarCelula(tr, c.nome, 'p-3 font-medium text-white');
+        adicionarCelula(tr, c.usuario);
+        adicionarCelula(tr, c.senha);
+        adicionarCelula(tr, formatarData(c.data_cadastro));
+        adicionarCelula(tr, formatarData(c.vencimento));
+        adicionarCelula(tr, c.vencimento ? Number(String(c.vencimento).slice(8, 10)) : '');
+        adicionarCelula(tr, c.servidor);
+        adicionarCelula(tr, c.aplicativo);
+        adicionarCelula(tr, c.mac);
+        adicionarCelula(tr, c.Key);
+        adicionarCelula(tr, c.observacao);
+        adicionarCelula(tr, c.indicado_por);
+
+        const tdStatus = document.createElement('td');
+        tdStatus.className = 'p-3';
+        const span = document.createElement('span');
+        span.className = 'px-2 py-1 rounded text-xs whitespace-nowrap font-semibold ';
+
+        if (dias !== null && dias < -1) span.className += 'bg-red-500/20 text-red-200';
+        else if (dias === -1) span.className += 'bg-orange-500/20 text-orange-200';
+        else if (dias === 0) span.className += 'bg-yellow-400/20 text-yellow-100';
+        else if (dias === 1) span.className += 'bg-green-500/20 text-green-200';
+        else if (dias === 2) span.className += 'bg-blue-500/20 text-blue-200';
+        else if (situacao === 'Sem vencimento') span.className += 'bg-slate-700 text-slate-300';
+        else span.className += 'bg-slate-800 text-slate-200';
+
+        span.textContent = calcularStatusCliente(c.vencimento);
+        tdStatus.appendChild(span);
+        tr.appendChild(tdStatus);
+
+        const tdAcoes = document.createElement('td');
+        tdAcoes.className = 'p-3 whitespace-nowrap';
+        const btnEditar = document.createElement('button');
+        btnEditar.type = 'button';
+        btnEditar.className = 'px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold';
+        btnEditar.innerHTML = '<i class="fa-solid fa-pen mr-1"></i> Editar';
+        btnEditar.addEventListener('click', () => abrirModalEditarCliente(c.idc));
+        tdAcoes.appendChild(btnEditar);
+        const btnCartao = document.createElement('button');
+        btnCartao.type = 'button'; btnCartao.className = 'ml-1 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold';
+        btnCartao.innerHTML = '<i class="fa-solid fa-address-card mr-1"></i> Cartão';
+        btnCartao.addEventListener('click', () => abrirCartaoCliente(c.idc));
+        tdAcoes.appendChild(btnCartao);
+        const btnRenovar = document.createElement('button');
+        btnRenovar.type = 'button'; btnRenovar.className = 'ml-1 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold';
+        btnRenovar.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i> Renovar';
+        btnRenovar.addEventListener('click', () => renovarCliente(c.idc));
+        tdAcoes.appendChild(btnRenovar);
+        const btnWhatsApp = document.createElement('button');
+        btnWhatsApp.type = 'button'; btnWhatsApp.className = 'ml-1 px-3 py-1.5 rounded-lg bg-green-700 hover:bg-green-600 text-white text-xs font-semibold';
+        btnWhatsApp.innerHTML = '<i class="fa-solid fa-message mr-1"></i> Gerar mensagem';
+        btnWhatsApp.addEventListener('click', () => abrirModalWhatsApp(c.idc));
+        tdAcoes.appendChild(btnWhatsApp);
+        tr.appendChild(tdAcoes);
+        tbody.appendChild(tr);
+      });
+
+      $('sem-resultados').classList.toggle('hidden', pagina.length !== 0);
+      $('resultado-contagem').textContent = `${filtrados.length} resultado(s) de ${clientesCache.length} cliente(s) cadastrados`;
+      $('paginacao-info').textContent = filtrados.length
+        ? `Página ${paginaAtual + 1} de ${totalPaginas}`
+        : 'Sem registros para exibir';
+      $('btn-anterior').disabled = paginaAtual === 0;
+      $('btn-proximo').disabled = paginaAtual >= totalPaginas - 1;
+    }
+
+    function atualizarGraficoVencimentos() {
+      if (typeof Chart === 'undefined') {
+        $('grafico-resumo').textContent = 'Não foi possível carregar a biblioteca do gráfico. A tabela de clientes continua disponível.';
+        return;
+      }
+      const ativos = clientesCache.filter(c => calcularStatusCliente(c.vencimento) === 'Em dia' && c.vencimento && dentroPeriodo(c.vencimento));
+      const contagem = Array.from({ length: 31 }, () => 0);
+      ativos.forEach(c => {
+        const dia = Number(String(c.vencimento).slice(8, 10));
+        if (Number.isInteger(dia) && dia >= 1 && dia <= 31) contagem[dia - 1]++;
+      });
+
+      const canvas = $('grafico-vencimentos');
+      if (graficoVencimentos) graficoVencimentos.destroy();
+      graficoVencimentos = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: Array.from({ length: 31 }, (_, i) => String(i + 1)),
+          datasets: [{
+            label: 'Clientes em dia com vencimento no dia',
+            data: contagem,
+            backgroundColor: Array.from({ length: 31 }, (_, i) => diaSelecionadoGrafico === i + 1 ? '#a5b4fc' : '#6366f1'),
+            borderColor: '#818cf8',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          onClick: (_evento, elementos) => {
+            if (!elementos.length) return;
+            const dia = elementos[0].index + 1;
+            aplicarFiltroGrafico('vencimentoDia', String(dia), `Clientes em dia com vencimento no dia ${dia}`);
+          },
+          plugins: {
+            legend: { display: false },
+            datalabels: { color: '#f8fafc', anchor: 'end', align: 'end', font: { weight: 'bold' }, formatter: value => value > 0 ? value : '' },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.raw} cliente(s) ativo(s)` } }
+          },
+          scales: {
+            x: { title: { display: true, text: 'Dia do mês', color: '#94a3b8' }, ticks: { color: '#94a3b8', autoSkip: false, maxRotation: 0 }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { precision: 0, color: '#94a3b8' }, grid: { display: false } }
+          }
         }
+      });
 
-        function atualizarListaIndicados(dados) {
-            const select = document.getElementById('select-indicado');
-            const observacoesUnicas = [...new Set(dados.map(c => c.observacao).filter(Boolean))];
+      const totalAgendados = contagem.reduce((soma, n) => soma + n, 0);
+      $('grafico-resumo').textContent = `${totalAgendados} cliente(s) ativo(s) com vencimento definido. ${diaSelecionadoGrafico ? `Selecionado: dia ${diaSelecionadoGrafico}; a tabela mostra os clientes ativos que vencem nesse dia.` : 'Selecione uma barra para ver os clientes que vencem no dia correspondente.'}`;
+      $('btn-limpar-dia-grafico').classList.toggle('hidden', diaSelecionadoGrafico === null);
+    }
 
-            select.innerHTML = '<option value="">Selecione...</option>';
-            observacoesUnicas.forEach(obs => {
-                select.innerHTML += `<option value="${obs}">${obs}</option>`;
-            });
+    function aplicarFiltroGrafico(tipo, valor, descricao) {
+      const mesmo = filtroGrafico && filtroGrafico.tipo === tipo && String(filtroGrafico.valor) === String(valor);
+      filtroGrafico = mesmo ? null : { tipo, valor: String(valor), descricao };
+      diaSelecionadoGrafico = filtroGrafico?.tipo === 'vencimentoDia' ? Number(filtroGrafico.valor) : null;
+      $('filtro-status').value = ''; $('filtro-vencimento').value = ''; $('search-input').value = '';
+      paginaAtual = 0; atualizarIndicadoresRapidos(); atualizarTodosGraficos(); renderizarTabela();
+    }
+
+    function limparFiltrosGraficos() {
+      filtroGrafico = null; diaSelecionadoGrafico = null;
+      $('filtro-status').value = ''; $('filtro-vencimento').value = ''; $('search-input').value = '';
+      paginaAtual = 0; atualizarIndicadoresRapidos(); atualizarTodosGraficos(); renderizarTabela();
+    }
+
+    function atualizarIndicadoresRapidos() {
+      const n = { vencidos: 0, em_dia: 0, hoje: 0, ontem: 0, amanha: 0, dois_dias: 0 };
+      clientesCache.forEach(c => {
+        const d = calcularDiasParaVencer(c.vencimento);
+        if (d === null) return;
+        if (d < 0) n.vencidos++;
+        else n.em_dia++;
+        if (d === -1) n.ontem++;
+        if (d === 0) n.hoje++;
+        if (d === 1) n.amanha++;
+        if (d === 2) n.dois_dias++;
+      });
+      $('kpi-qtd-vencidos').textContent = n.vencidos; $('kpi-qtd-em-dia').textContent = n.em_dia; $('kpi-qtd-hoje').textContent = n.hoje; $('kpi-qtd-amanha').textContent = n.amanha; $('kpi-qtd-dois-dias').textContent = n.dois_dias; $('kpi-qtd-ontem').textContent=n.ontem; $('kpi-qtd-hoje-tabela').textContent=n.hoje; $('kpi-qtd-amanha-tabela').textContent=n.amanha; $('kpi-qtd-dois-tabela').textContent=n.dois_dias; $('kpi-qtd-vencidos-tabela').textContent=n.vencidos; $('kpi-qtd-total-tabela').textContent=clientesCache.length;
+      const descricoes = filtroGrafico ? { vencimentoDia: `Dia de vencimento ${filtroGrafico.valor}`, cadastroData: `Cadastros em ${formatarData(filtroGrafico.valor)}`, aplicativo: `Aplicativo: ${filtroGrafico.descricao}`, servidor: `Servidor: ${filtroGrafico.descricao}`, indicador: `Indicado por: ${filtroGrafico.descricao}`, cadastroStatus: filtroGrafico.valor === 'emdia' ? 'Clientes em dia' : filtroGrafico.valor === 'vencido' ? 'Clientes vencidos' : 'Clientes sem vencimento', vencimentoRapido: filtroGrafico.descricao } : {};
+      const tem = Boolean(filtroGrafico); $('filtro-grafico-ativo').textContent = tem ? `Filtro aplicado: ${descricoes[filtroGrafico.tipo] || filtroGrafico.descricao}` : ''; $('filtro-grafico-ativo').classList.toggle('hidden', !tem); $('btn-limpar-filtros-graficos').classList.toggle('hidden', !tem); $('btn-limpar-dia-grafico').classList.toggle('hidden', diaSelecionadoGrafico === null);
+    }
+
+    function destruirGraficoExtra(chave) { if (graficosExtras[chave]) { graficosExtras[chave].destroy(); graficosExtras[chave] = null; } }
+
+    function atualizarGraficoCategorias(chave, canvasId, resumoId, dados, titulo, tipoFiltro, limite = 20) {
+      let itens = [...dados.entries()].sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0], 'pt-BR')).slice(0, limite);
+      destruirGraficoExtra(chave);
+      graficosExtras[chave] = new Chart($(canvasId), { type: 'bar', data: { labels: itens.map(x=>x[0]), datasets: [{ label: titulo, data: itens.map(x=>x[1]), backgroundColor: itens.map(x => filtroGrafico?.tipo === tipoFiltro && normalizar(x[0]) === filtroGrafico.valor ? '#a5b4fc' : '#6366f1'), borderColor:'#818cf8', borderWidth:1, borderRadius:4 }] }, options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, onClick:(_e,els)=>{ if(!els.length)return; const item=itens[els[0].index]; aplicarFiltroGrafico(tipoFiltro, normalizar(item[0]), `${item[0]} (${item[1]} cliente(s))`); }, plugins:{legend:{display:false},datalabels:{color:'#f8fafc',anchor:'end',align:'end',font:{weight:'bold'},formatter:v=>v>0?v:''},tooltip:{callbacks:{label:ctx=>`${ctx.raw} cliente(s)`}}}, scales:{x:{display:false,beginAtZero:true,grid:{display:false},border:{display:false}},y:{ticks:{color:'#94a3b8'},grid:{display:false}}} } });
+      const total=[...dados.values()].reduce((a,b)=>a+b,0); $(resumoId).textContent=`${total} cliente(s) em ${dados.size} categoria(s). ${dados.size>limite?`Exibindo as ${limite} maiores categorias. `:''}Clique em uma barra para filtrar.`;
+    }
+
+    function atualizarGraficoCadastros() {
+      const porDia = Array(31).fill(0);
+      clientesCache.forEach(c=>{const d=String(c.data_cadastro||'').slice(0,10);if(/^\d{4}-\d{2}-\d{2}$/.test(d)&&dentroPeriodo(d)){const dia=Number(d.slice(8,10));if(dia>=1&&dia<=31)porDia[dia-1]++;}});
+      const itens=porDia.map((quantidade,indice)=>({dia:indice+1,quantidade})).filter(x=>x.quantidade>0).sort((a,b)=>b.quantidade-a.quantidade||a.dia-b.dia).slice(0,20);
+      destruirGraficoExtra('cadastros');
+      graficosExtras.cadastros=new Chart($('grafico-cadastros'),{type:'bar',data:{labels:itens.map(x=>String(x.dia)),datasets:[{label:'Cadastros',data:itens.map(x=>x.quantidade),backgroundColor:'#14b8a6',borderColor:'#2dd4bf',borderWidth:1,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,onClick:(_e,els)=>{if(!els.length)return;const item=itens[els[0].index];mostrarMensagem(`Dia ${item.dia}: ${item.quantidade} cadastro(s) no período selecionado. Esse total reúne todas as datas que caem nesse dia do mês.`, 'info');},plugins:{legend:{display:false},datalabels:{color:'#f8fafc',anchor:'end',align:'end',font:{weight:'bold'},formatter:v=>v>0?v:''},tooltip:{callbacks:{label:ctx=>`${ctx.raw} cadastro(s)`}}},scales:{x:{display:false,beginAtZero:true,grid:{display:false},border:{display:false}},y:{ticks:{color:'#94a3b8'},grid:{display:false}}}}});
+      const total=porDia.reduce((a,b)=>a+b,0); $('resumo-cadastros').textContent=`${total} cadastro(s) no período. Exibindo os ${itens.length} dias do mês com maior volume, sem separar por mês ou ano.`;
+    }
+
+    function atualizarGraficoAtivosInativos() {
+      const emDia = clientesCache.filter(c => calcularStatusCliente(c.vencimento) === 'Em dia').length;
+      const vencidos = clientesCache.filter(c => calcularStatusCliente(c.vencimento) === 'Vencido').length;
+      const semVencimento = clientesCache.filter(c => calcularStatusCliente(c.vencimento) === 'Sem vencimento').length;
+      const total = clientesCache.length || 1;
+      destruirGraficoExtra('ativosInativos');
+      graficosExtras.ativosInativos = new Chart($('grafico-ativos-inativos'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Em dia', 'Vencido', 'Sem vencimento'],
+          datasets: [{ data: [emDia, vencidos, semVencimento], backgroundColor: ['#10b981', '#ef4444', '#64748b'], borderColor: ['#064e3b', '#7f1d1d', '#334155'], borderWidth: 2, hoverOffset: 8 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '62%',
+          onClick: (_e, els) => {
+            if (!els.length) return;
+            const valor = ['emdia', 'vencido', 'sem_vencimento'][els[0].index];
+            const descricao = ['Clientes em dia', 'Clientes vencidos', 'Clientes sem vencimento'][els[0].index];
+            aplicarFiltroGrafico('cadastroStatus', valor, descricao);
+          },
+          plugins: {
+            legend: { display: false },
+            datalabels: {
+              color: '#ffffff', font: { weight: 'bold', size: 13 },
+              formatter: (value, ctx) => value > 0 ? `${value}\n${(Number(value) / total * 100).toFixed(1).replace('.', ',')}%` : ''
+            },
+            tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} cliente(s) (${(Number(ctx.raw) / total * 100).toFixed(1).replace('.', ',')}%)` } }
+          }
         }
+      });
+      $('resumo-ativos-inativos').textContent = `Em dia: ${emDia} · Vencidos: ${vencidos} · Sem vencimento: ${semVencimento} · Total: ${clientesCache.length}`;
+    }
 
-        function abrirModalNovoCliente() { document.getElementById('modal-cliente').classList.remove('hidden'); document.getElementById('modal-cliente').classList.add('flex'); }
-        function fecharModalNovoCliente() { document.getElementById('modal-cliente').classList.remove('flex'); document.getElementById('modal-cliente').classList.add('hidden'); }
+    function atualizarTodosGraficos() {
+      atualizarGraficoVencimentos(); if(typeof Chart==='undefined')return; atualizarGraficoCadastros(); const apps=new Map(),servidores=new Map(),indicadores=new Map();
+      clientesCache.forEach(c=>{const app=String(c.aplicativo||'').trim()||'Não informado',srv=String(c.servidor||'').trim()||'Não informado',ind=String(c.indicado_por||'').trim()||'Não informado';if(calcularStatusCliente(c.vencimento)==='Em dia'){apps.set(app,(apps.get(app)||0)+1);servidores.set(srv,(servidores.get(srv)||0)+1);}indicadores.set(ind,(indicadores.get(ind)||0)+1);});
+      atualizarGraficoCategorias('aplicativos','grafico-aplicativos','resumo-aplicativos',apps,'Clientes','aplicativo'); atualizarGraficoCategorias('servidores','grafico-servidores','resumo-servidores',servidores,'Clientes','servidor'); atualizarGraficoCategorias('indicadores','grafico-indicadores','resumo-indicadores',indicadores,'Clientes indicados','indicador'); atualizarGraficoAtivosInativos();
+    }
 
-        async function salvarCliente(e) {
-            e.preventDefault();
-            const formulario = e.target;
-            const formData = new FormData(formulario);
-            const novoObj = Object.fromEntries(formData.entries());
+    function abrirModalNovoCliente() {
+      clienteEditandoId = null;
+      $('form-novo-cliente').reset();
+      $('titulo-modal-cliente').textContent = 'Cadastrar Novo Cliente';
+      $('btn-salvar-cliente').innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Salvar Cliente';
+      $('campo-data-cadastro').value = hojeLocalISO();
+      $('campo-status').value = 'Sem vencimento';
+      $('campo-emdia').value = '';
+      atualizarCampoEmDia();
+      $('campo-senha').required = false;
+      $('campo-senha').placeholder = '';
+      atualizarListaIndicados();
+      $('modal-cliente').classList.remove('hidden');
+      $('modal-cliente').classList.add('flex');
+      $('campo-nome').focus();
+    }
 
-            // Avalia o status automático ao cadastrar
-            const avaliacao = avaliarStatusCliente(novoObj.vencimento);
-            novoObj.status = avaliacao.status;
-            novoObj['emdia?'] = avaliacao.emDia;
+    function dataParaCampo(valor) {
+      if (!valor) return '';
+      return String(valor).slice(0, 10);
+    }
 
-            try {
-                const { data, error } = await supabaseClient.from('clientes_wsplay').insert([novoObj]).select();
-                if (error) {
-                    alert('Erro ao cadastrar: ' + error.message);
-                    return;
-                }
+    function abrirModalEditarCliente(id) {
+      const cliente = clientesCache.find(c => String(c.idc) === String(id));
+      if (!cliente) {
+        mostrarMensagem('Não foi possível localizar esse cliente na lista. Atualize os dados e tente novamente.', 'erro');
+        return;
+      }
+      clienteEditandoId = cliente.idc;
+      const form = $('form-novo-cliente');
+      form.reset();
+      $('titulo-modal-cliente').textContent = 'Editar Cliente';
+      $('btn-salvar-cliente').innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Salvar Alterações';
+      $('campo-senha').value = '';
+      $('campo-senha').placeholder = 'Deixe em branco para manter a senha atual';
+      $('campo-senha').required = false;
 
-                if (data && data.length > 0) {
-                    await supabaseClient.from('historico_pagamentos').insert([{ idc: data[0].idc, nome_cliente: data[0].nome, valor: 26.00, tipo: 'adesao' }]);
-                    await supabaseClient.from('historico_chamados').insert([{ idc: data[0].idc, nome_cliente: data[0].nome, descricao_mudanca: 'Cliente cadastrado no sistema.' }]);
-                }
+      const campos = {
+        nome: 'nome', usuario: 'usuario', data_cadastro: 'data_cadastro',
+        vencimento: 'vencimento', vencedia: 'vencedia', servidor: 'servidor', dispositivo: 'dispositivo',
+        aplicativo: 'aplicativo', observacao: 'observacao', indicado_por: 'indicado_por', status: 'status',
+        'EmDia?': 'EmDia?', macvence: 'macvence', mac: 'mac', Key: 'Key', link_m3u: 'link_m3u',
+        'Método Envio': 'Método Envio'
+      };
+      for (const [name, coluna] of Object.entries(campos)) {
+        const campo = form.elements.namedItem(name);
+        if (!campo) continue;
+        let valor = cliente[coluna];
+        if (name === 'data_cadastro' || name === 'vencimento' || name === 'macvence') valor = dataParaCampo(valor);
+        campo.value = valor == null ? '' : String(valor);
+      }
+      // Inclui no select um valor antigo mesmo que não esteja nas observações atuais.
+      const indicado = $('campo-indicado');
+      const valorIndicado = cliente.indicado_por || 'WS';
+      if (![...indicado.options].some(o => o.value === valorIndicado)) {
+        const opt = document.createElement('option'); opt.value = valorIndicado; opt.textContent = valorIndicado; indicado.appendChild(opt);
+      }
+      indicado.value = valorIndicado;
+      atualizarCampoEmDia();
+      $('modal-cliente').classList.remove('hidden');
+      $('modal-cliente').classList.add('flex');
+      $('campo-nome').focus();
+    }
 
-                fecharModalNovoCliente();
-                formulario.reset();
-                await carregarDadosFinanceiros();
-                await carregarClientes();
-                alert('Cliente cadastrado com sucesso!');
-            } catch (erro) {
-                alert('Falha ao cadastrar cliente.');
-            }
+    function fecharModalNovoCliente() {
+      $('modal-cliente').classList.add('hidden');
+      $('modal-cliente').classList.remove('flex');
+      clienteEditandoId = null;
+      $('campo-senha').placeholder = '';
+    }
+
+    // timestamptz recebe meio-dia UTC para que a data civil não caia no dia anterior
+    // ao ser lida em fusos negativos. A tabela continua com o tipo original.
+    function dataCivilParaTimestamp(dataISO) {
+      if (!dataISO) return null;
+      return `${dataISO}T12:00:00.000Z`;
+    }
+
+    async function salvarCliente(evento) {
+      evento.preventDefault();
+      esconderMensagem();
+
+      const botao = $('btn-salvar-cliente');
+      botao.disabled = true;
+      botao.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Salvando...';
+
+      const form = evento.currentTarget;
+      const formData = new FormData(form);
+      const novoCliente = Object.fromEntries(formData.entries());
+
+      // Regra automática: o vencimento é a fonte de verdade para EmDia?.
+      // Se não houver vencimento, salva null.
+      novoCliente['EmDia?'] = calcularEmDia(novoCliente.vencimento) || null;
+      novoCliente.status = calcularStatusCliente(novoCliente.vencimento);
+      // vence dia acompanha automaticamente o dia do vencimento; sem data, fica nulo.
+      novoCliente.vencedia = novoCliente.vencimento ? Number(String(novoCliente.vencimento).slice(8, 10)) : null;
+
+      // O idc é Identity/Primary Key e não deve ser enviado no cadastro nem alterado.
+      delete novoCliente.idc;
+
+      // Em edição, senha vazia significa manter a senha existente; não sobrescrever com vazio.
+      if (clienteEditandoId !== null && !novoCliente.senha) {
+        delete novoCliente.senha;
+      }
+
+      // A coluna timestamptz armazena data e hora; usamos meio-dia UTC para preservar
+      // a data civil informada quando exibida no formato DD/MM/AAAA.
+      novoCliente.data_cadastro = dataCivilParaTimestamp(novoCliente.data_cadastro);
+
+      for (const campo of ['usuario','senha','telefone','servidor','dispositivo','aplicativo','observacao','indicado_por','mac','Key','link_m3u','status','EmDia?','Método Envio']) {
+        if (novoCliente[campo] === '') novoCliente[campo] = null;
+      }
+      for (const campo of ['vencimento','macvence']) {
+        if (!novoCliente[campo]) novoCliente[campo] = null;
+      }
+      if (novoCliente.vencedia === '') novoCliente.vencedia = null;
+      else if (novoCliente.vencedia !== null) novoCliente.vencedia = Number(novoCliente.vencedia);
+
+      try {
+        let resultado;
+        if (clienteEditandoId !== null) {
+          resultado = await supabaseClient.from('clientes_wsplay').update(novoCliente).eq('idc', clienteEditandoId);
+        } else {
+          resultado = await supabaseClient.from('clientes_wsplay').insert([novoCliente]);
         }
-    </script>
+        if (resultado.error) throw resultado.error;
+
+        const estavaEditando = clienteEditandoId !== null;
+        fecharModalNovoCliente();
+        await carregarClientes();
+        await carregarAnaliticosFinanceiros();
+        mostrarMensagem(estavaEditando ? 'Cliente atualizado com sucesso!' : 'Cliente cadastrado com sucesso!', 'sucesso');
+      } catch (erro) {
+        console.error('Erro ao cadastrar cliente:', erro);
+        mostrarMensagem('Erro ao cadastrar cliente: ' + erro.message, 'erro');
+      } finally {
+        botao.disabled = false;
+        botao.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Salvar Cliente';
+      }
+    }
+
+    function formatarMoeda(valor) { return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+    function dataISOValida(valor) { const s = String(valor || '').slice(0,10); return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : ''; }
+    function adicionarMesCivil(dataISO) {
+      const [ano, mes, dia] = dataISO.split('-').map(Number);
+      const destinoMesIndex = mes; // mês seguinte em índice JS
+      const ultimoDia = new Date(Date.UTC(ano, destinoMesIndex + 1, 0)).getUTCDate();
+      return new Date(Date.UTC(ano, destinoMesIndex, Math.min(dia, ultimoDia))).toISOString().slice(0,10);
+    }
+
+    async function renovarCliente(id) {
+      const c = clientesCache.find(x => String(x.idc) === String(id));
+      if (!c) return mostrarMensagem('Cliente não encontrado.', 'erro');
+      const hoje = hojeLocalISO();
+      const vencAtual = dataISOValida(c.vencimento);
+      const base = vencAtual && vencAtual >= hoje ? vencAtual : hoje;
+      const novoVenc = adicionarMesCivil(base);
+      const confirmar = confirm(`Registrar renovação de ${c.nome}?\n\nValor: R$ 26,00\nVencimento atual: ${vencAtual ? formatarData(vencAtual) : 'Sem vencimento'}\nNovo vencimento: ${formatarData(novoVenc)}\n\nA operação será gravada no histórico financeiro.`);
+      if (!confirmar) return;
+      try {
+        const { data, error } = await supabaseClient.rpc('registrar_renovacao_wsplay', { p_cliente_id: String(c.idc), p_cliente_nome: c.nome || '', p_data_renovacao: hoje, p_valor: VALOR_OPERACAO, p_vencimento_anterior: vencAtual || null, p_novo_vencimento: novoVenc });
+        if (error) throw error;
+        mostrarMensagem(`Renovação registrada para ${c.nome}. Novo vencimento: ${formatarData(novoVenc)}.`, 'sucesso');
+        await carregarClientes();
+        if (clienteCartaoAtual && String(clienteCartaoAtual.idc) === String(c.idc)) await carregarLinhaTempo(c);
+      } catch (e) {
+        console.error('Falha ao registrar renovação:', e);
+        mostrarMensagem('Não foi possível registrar a renovação. Confirme se executou o script SQL v7 no Supabase. Detalhe: ' + e.message, 'erro');
+      }
+    }
+
+    function abrirCartaoCliente(id) {
+      const c = clientesCache.find(x => String(x.idc) === String(id));
+      if (!c) return mostrarMensagem('Cliente não encontrado.', 'erro');
+      clienteCartaoAtual = c;
+      $('cartao-titulo').textContent = c.nome || 'Cartão do cliente';
+      $('cartao-subtitulo').textContent = `Status: ${calcularStatusCliente(c.vencimento)}`;
+      $('form-atendimento').reset();
+      $('modal-cartao-cliente').classList.remove('hidden'); $('modal-cartao-cliente').classList.add('flex');
+      carregarLinhaTempo(c);
+    }
+    function fecharCartaoCliente() { $('modal-cartao-cliente').classList.add('hidden'); $('modal-cartao-cliente').classList.remove('flex'); clienteCartaoAtual = null; }
+    async function carregarLinhaTempo(c) {
+      $('cartao-linha-tempo').innerHTML = '<p class="text-sm text-slate-500">Carregando histórico...</p>';
+      try {
+        const { data, error } = await supabaseClient.from('atendimentos_wsplay').select('id,cliente_id,categoria,assunto,detalhes,data_atendimento,created_at').eq('cliente_id', String(c.idc)).order('data_atendimento', { ascending: false });
+        if (error) throw error;
+        const eventos = (data || []).map(x => ({ ...x, _tipo: 'atendimento', _data: x.data_atendimento || x.created_at }));
+        const { data: renovs, error: errR } = await supabaseClient.from('renovacoes_wsplay').select('id,cliente_id,data_renovacao,valor,vencimento_anterior,novo_vencimento,created_at').eq('cliente_id', String(c.idc)).order('data_renovacao', { ascending: false });
+        if (errR) throw errR;
+        (renovs || []).forEach(x => eventos.push({ ...x, _tipo: 'renovacao', _data: x.data_renovacao || x.created_at, categoria: 'Renovação', assunto: `Renovação — ${formatarMoeda(x.valor)}`, detalhes: `Vencimento anterior: ${formatarData(x.vencimento_anterior)} · Novo vencimento: ${formatarData(x.novo_vencimento)}` }));
+        eventos.sort((a,b) => String(b._data).localeCompare(String(a._data)));
+        $('cartao-qtd-atendimentos').textContent = `${eventos.length} registro(s)`;
+        const box = $('cartao-linha-tempo'); box.replaceChildren();
+        if (!eventos.length) { box.innerHTML = '<p class="text-sm text-slate-500">Ainda não há atendimentos ou renovações registrados para este cliente.</p>'; return; }
+        eventos.forEach(ev => {
+          const card = document.createElement('div'); card.className = 'border border-slate-800 bg-slate-950 rounded-xl p-3';
+          const head = document.createElement('div'); head.className = 'flex flex-wrap justify-between gap-2';
+          const title = document.createElement('p'); title.className = 'font-semibold text-sm'; title.textContent = `${ev.categoria || 'Atendimento'} · ${ev.assunto || ''}`;
+          const date = document.createElement('p'); date.className = 'text-xs text-slate-400'; date.textContent = ev._tipo === 'atendimento' ? formatarDataHora(ev._data) : formatarData(ev._data);
+          head.append(title,date); card.appendChild(head);
+          const details = document.createElement('p'); details.className = 'text-sm text-slate-300 mt-2 whitespace-pre-wrap'; details.textContent = ev.detalhes || 'Sem detalhes.'; card.appendChild(details); box.appendChild(card);
+        });
+      } catch (e) {
+        console.error('Erro ao carregar cartão do cliente:', e);
+        $('cartao-qtd-atendimentos').textContent = '';
+        $('cartao-linha-tempo').innerHTML = '<p class="text-sm text-amber-300">Não foi possível carregar a linha do tempo. Execute o script SQL v7 e confira as permissões no Supabase.</p>';
+      }
+    }
+    async function salvarAtendimento(evento) {
+      evento.preventDefault();
+      if (!clienteCartaoAtual) return;
+      const btn = $('btn-salvar-atendimento'); btn.disabled = true; btn.textContent = 'Salvando...';
+      try {
+        const { error } = await supabaseClient.from('atendimentos_wsplay').insert([{ cliente_id: String(clienteCartaoAtual.idc), cliente_nome: clienteCartaoAtual.nome || '', categoria: $('atendimento-categoria').value, assunto: $('atendimento-assunto').value.trim(), detalhes: $('atendimento-detalhes').value.trim() || null, data_atendimento: new Date().toISOString() }]);
+        if (error) throw error;
+        $('form-atendimento').reset(); await carregarLinhaTempo(clienteCartaoAtual); mostrarMensagem('Atendimento registrado no cartão do cliente.', 'sucesso');
+      } catch (e) { mostrarMensagem('Não foi possível salvar o atendimento. Confirme se executou o script SQL v7. Detalhe: ' + e.message, 'erro'); }
+      finally { btn.disabled = false; btn.textContent = 'Registrar atendimento'; }
+    }
+
+    function popularSelectAnos(id, anos) {
+      const el = $(id); const atual = el.value; el.replaceChildren();
+      const lista = [...new Set(anos)].sort((a,b)=>b-a);
+      if (!lista.length) lista.push(new Date().getFullYear());
+      lista.forEach(a=>{const o=document.createElement('option');o.value=String(a);o.textContent=String(a);el.appendChild(o);});
+      if (lista.includes(Number(atual))) el.value=atual;
+    }
+    function agruparPorAnoMes(dataISO) { const s=dataISOValida(dataISO); return s ? {ano:Number(s.slice(0,4)),mes:Number(s.slice(5,7)),dia:Number(s.slice(8,10))} : null; }
+    function dentroPeriodo(dataISO) { const d=dataISOValida(dataISO); if(!d) return false; const ym=d.slice(0,7); const inicio=$('graficos-data-inicio')?.value||''; const fim=$('graficos-data-fim')?.value||''; return (!inicio||ym>=inicio)&&(!fim||ym<=fim); }
+    function clientesNoPeriodo(campo) { return clientesCache.filter(c=>dentroPeriodo(c[campo])); }
+    function montarMatriz(id, mapa, ano, tipo) {
+      const cont=$(id); cont.replaceChildren(); const meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      const table=document.createElement('table'); table.className='w-full text-sm';
+      const head=document.createElement('thead'); head.innerHTML='<tr class="text-slate-400 border-b border-slate-800"><th class="text-left p-2">Período</th><th class="text-right p-2">Quantidade</th></tr>'; table.appendChild(head);
+      const body=document.createElement('tbody'); body.className='divide-y divide-slate-800'; let total=0;
+      for(let m=1;m<=12;m++) { let q=0; for(const [k,v] of mapa) if(k.startsWith(`${ano}-${String(m).padStart(2,'0')}`)) q+=v; total+=q;
+        const tr=document.createElement('tr'); tr.className='hover:bg-slate-800/60 cursor-pointer'; const a=document.createElement('td');a.className='p-2';a.textContent=meses[m-1];const b=document.createElement('td');b.className='p-2 text-right font-semibold';b.textContent=q;
+        tr.append(a,b);tr.addEventListener('click',()=>{if(q) aplicarFiltroGrafico(tipo==='cadastro'?'matrizCadastroMes':'matrizVencidoMes',`${ano}-${String(m).padStart(2,'0')}`,`${tipo==='cadastro'?'Cadastros':'Vencidos por vencimento'} · ${meses[m-1]} ${ano}`);});body.appendChild(tr);
+        const dias=Array.from({length:new Date(ano,m,0).getDate()},(_,i)=>i+1).map(d=>({d,k:`${ano}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,q:mapa.get(`${ano}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`)||0})).filter(x=>x.q>0);
+        if(dias.length){const detail=document.createElement('tr');const td=document.createElement('td');td.colSpan=2;td.className='px-2 pb-2';const wrap=document.createElement('div');wrap.className='flex flex-wrap gap-1';dias.forEach(x=>{const bt=document.createElement('button');bt.type='button';bt.className='text-xs px-2 py-1 rounded bg-slate-800 hover:bg-indigo-600';bt.textContent=String(x.d);bt.title=`Dia ${x.d}: ${x.q} cliente(s). Clique para filtrar`; bt.addEventListener('click',e=>{e.stopPropagation();aplicarFiltroGrafico(tipo==='cadastro'?'matrizCadastroDia':'matrizVencidoDia',x.k,`${tipo==='cadastro'?'Cadastros':'Vencidos'} em ${formatarData(x.k)}`);});wrap.appendChild(bt);});td.appendChild(wrap);detail.appendChild(td);body.appendChild(detail);}
+      }
+      const foot=document.createElement('tfoot');foot.innerHTML=`<tr class="border-t border-slate-700 font-bold"><td class="p-2">Total do ano</td><td class="p-2 text-right">${total}</td></tr>`;table.append(body,foot);cont.appendChild(table);
+    }
+    async function carregarAnaliticosFinanceiros() {
+      try {
+        const {data,error}=await supabaseClient.from('renovacoes_wsplay').select('id,cliente_id,data_renovacao,valor,vencimento_anterior,novo_vencimento,status_pagamento,data_pagamento');
+        if(error) throw error; renovacoesCache=data||[];
+      } catch(e) { renovacoesCache=[]; console.warn('Histórico financeiro ainda não configurado ou faltam colunas de pagamento. Execute o SQL de implantação financeira:',e.message); mostrarMensagem('O financeiro precisa da atualização do banco. Execute o arquivo SQL de implantação financeira no Supabase e recarregue a página.', 'erro'); }
+      const anos=[]; clientesCache.forEach(c=>{const x=agruparPorAnoMes(c.data_cadastro);if(x)anos.push(x.ano);}); renovacoesCache.forEach(r=>{const x=agruparPorAnoMes(r.data_renovacao);if(x)anos.push(x.ano);});
+      const anoAtual=new Date().getFullYear(); anos.push(anoAtual); popularSelectAnos('filtro-ano-financeiro',anos); if (!$('filtro-mes-financeiro').dataset.inicializado) { $('filtro-mes-financeiro').value=String(new Date().getMonth()+1); $('filtro-mes-financeiro').dataset.inicializado='1'; } popularSelectAnos('matriz-cadastros-ano',clientesCache.map(c=>agruparPorAnoMes(c.data_cadastro)?.ano).filter(Boolean));
+      const vencidosDatas=clientesCache.filter(c=>calcularStatusCliente(c.vencimento)==='Vencido').map(c=>agruparPorAnoMes(c.vencimento)?.ano).filter(Boolean); popularSelectAnos('matriz-vencidos-ano',vencidosDatas);
+      atualizarGraficosFinanceiros();
+    }
+    async function definirPagamentoRenovacao(id, pago) {
+      try {
+        const atualizacao = { status_pagamento: pago ? 'Pago' : 'Pendente', data_pagamento: pago ? hojeLocalISO() : null };
+        const { error } = await supabaseClient.from('renovacoes_wsplay').update(atualizacao).eq('id', id);
+        if (error) throw error;
+        mostrarMensagem(pago ? 'Pagamento confirmado.' : 'Pagamento voltou para pendente.', 'sucesso');
+        await carregarAnaliticosFinanceiros();
+      } catch (e) {
+        console.error('Erro ao atualizar pagamento:', e);
+        mostrarMensagem('Não foi possível atualizar o pagamento. Execute primeiro o SQL de implantação financeira no Supabase. Detalhe: ' + e.message, 'erro');
+      }
+    }
+
+    function atualizarResumoFinanceiro() {
+      const ano = Number($('filtro-ano-financeiro').value) || new Date().getFullYear();
+      const mes = Number($('filtro-mes-financeiro').value) || (new Date().getMonth()+1);
+      const prefixo = `${ano}-${String(mes).padStart(2,'0')}`;
+      const coorte = new Map();
+      // Clientes cujo vencimento atual cai no mês selecionado.
+      clientesCache.forEach(c => {
+        const venc = dataISOValida(c.vencimento);
+        if (venc && venc.startsWith(prefixo)) {
+          const key = `${String(c.idc)}|${venc}`;
+          coorte.set(key, { cliente_id:String(c.idc), nome:c.nome || 'Sem nome', vencimento:venc, renovacao:null, status_pagamento:'Pendente' });
+        }
+      });
+      // Histórico preserva o vencimento que originou cada renovação.
+      renovacoesCache.forEach(r => {
+        const venc = dataISOValida(r.vencimento_anterior);
+        if (!venc || !venc.startsWith(prefixo)) return;
+        const cliente = clientesCache.find(c => String(c.idc) === String(r.cliente_id));
+        const key = `${String(r.cliente_id)}|${venc}`;
+        const item = { cliente_id:String(r.cliente_id), nome:cliente?.nome || r.cliente_nome || `Cliente ${r.cliente_id}`, vencimento:venc, renovacao:r, status_pagamento:r.status_pagamento || 'Pendente', data_pagamento:r.data_pagamento || null };
+        // O registro de renovação tem prioridade, pois é a fonte do estado do pagamento.
+        coorte.set(key, item);
+      });
+      const itens = [...coorte.values()].sort((a,b)=>a.vencimento.localeCompare(b.vencimento)||a.nome.localeCompare(b.nome,'pt-BR'));
+      const potencial = itens.length * VALOR_OPERACAO;
+      const recebido = itens.reduce((s,x)=>s+(x.renovacao && x.status_pagamento === 'Pago' ? Number(x.renovacao.valor || VALOR_OPERACAO) : 0),0);
+      $('fin-receita-potencial').textContent = formatarMoeda(potencial);
+      $('fin-receita-recebida').textContent = formatarMoeda(recebido);
+      $('fin-receita-esperada').textContent = formatarMoeda(Math.max(0,potencial-recebido));
+      const box = $('fin-tabela-pagamentos'); box.replaceChildren();
+      if (!itens.length) { box.innerHTML='<p class="text-sm text-slate-400 py-3">Nenhum vencimento encontrado para este mês/ano.</p>'; return; }
+      const table=document.createElement('table'); table.className='w-full text-sm';
+      const thead=document.createElement('thead'); thead.innerHTML='<tr class="text-slate-400 border-b border-slate-800"><th class="p-2 text-left">Cliente</th><th class="p-2 text-left">Vencimento</th><th class="p-2 text-right">Valor</th><th class="p-2 text-left">Pagamento</th><th class="p-2 text-left">Ação</th></tr>'; table.appendChild(thead);
+      const tbody=document.createElement('tbody'); tbody.className='divide-y divide-slate-800';
+      itens.forEach(item=>{
+        const tr=document.createElement('tr');
+        const nome=document.createElement('td'); nome.className='p-2'; nome.textContent=item.nome;
+        const venc=document.createElement('td'); venc.className='p-2'; venc.textContent=formatarData(item.vencimento);
+        const valor=document.createElement('td'); valor.className='p-2 text-right'; valor.textContent=formatarMoeda(item.renovacao?.valor ?? VALOR_OPERACAO);
+        const status=document.createElement('td'); status.className='p-2'; status.textContent=item.renovacao ? (item.status_pagamento==='Pago' ? `Pago${item.data_pagamento ? ' · '+formatarData(item.data_pagamento):''}` : 'Pendente de confirmação') : 'Aguardando renovação';
+        const acao=document.createElement('td'); acao.className='p-2';
+        if(item.renovacao){const bt=document.createElement('button');bt.type='button';bt.className='rounded px-3 py-1 text-xs '+(item.status_pagamento==='Pago'?'bg-slate-700 hover:bg-slate-600':'bg-emerald-700 hover:bg-emerald-600');bt.textContent=item.status_pagamento==='Pago'?'Desfazer pago':'Confirmar pago';bt.addEventListener('click',()=>definirPagamentoRenovacao(item.renovacao.id,item.status_pagamento!=='Pago'));acao.appendChild(bt);}
+        else {acao.textContent='—';}
+        tr.append(nome,venc,valor,status,acao);tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);box.appendChild(table);
+    }
+
+    function atualizarGraficosFinanceiros() {
+      const ano=Number($('filtro-ano-financeiro').value)||new Date().getFullYear(); const ativacoes=Array(12).fill(0),renovacoes=Array(12).fill(0),cadastrosMapa=new Map(),vencidosMapa=new Map(); const clientesData=clientesCache.filter(c=>dentroPeriodo(c.data_cadastro)); const clientesVencData=clientesCache.filter(c=>dentroPeriodo(c.vencimento));
+      clientesCache.forEach(c=>{const d=agruparPorAnoMes(c.data_cadastro);if(d&&dentroPeriodo(c.data_cadastro)){cadastrosMapa.set(dataISOValida(c.data_cadastro),(cadastrosMapa.get(dataISOValida(c.data_cadastro))||0)+1);if(d.ano===ano)ativacoes[d.mes-1]++;}const v=agruparPorAnoMes(c.vencimento);if(v&&dentroPeriodo(c.vencimento)&&calcularStatusCliente(c.vencimento)==='Vencido')vencidosMapa.set(dataISOValida(c.vencimento),(vencidosMapa.get(dataISOValida(c.vencimento))||0)+1);});
+      renovacoesCache.forEach(r=>{const d=agruparPorAnoMes(r.data_renovacao);if(d&&d.ano===ano&&dentroPeriodo(r.data_renovacao))renovacoes[d.mes-1]++;});
+      atualizarResumoFinanceiro();
+      const perdidos=Array(12).fill(0); clientesCache.forEach(c=>{const v=agruparPorAnoMes(c.vencimento);if(v&&v.ano===ano&&dentroPeriodo(c.vencimento)&&calcularStatusCliente(c.vencimento)==='Vencido')perdidos[v.mes-1]++;});
+      if(typeof Chart!=='undefined') { if(graficoFinanceiroMensal)graficoFinanceiroMensal.destroy(); graficoFinanceiroMensal=new Chart($('grafico-financeiro-mensal'),{type:'bar',data:{labels:['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],datasets:[{label:'Ativações',data:ativacoes,backgroundColor:'#14b8a6',barPercentage:.72,categoryPercentage:.72},{label:'Perdidos (vencidos atualmente)',data:perdidos,backgroundColor:'#ef4444',barPercentage:.72,categoryPercentage:.72}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#cbd5e1'}},datalabels:{color:'#f8fafc',anchor:'end',align:'end',font:{weight:'bold'},formatter:v=>v>0?v:''},tooltip:{callbacks:{afterBody:ctx=>ctx[0]?.datasetIndex===1?'Clientes atualmente vencidos, agrupados pelo mês do vencimento.':`Valor de referência das ativações: ${formatarMoeda(ativacoes[ctx[0]?.dataIndex]*VALOR_OPERACAO)}`}}},scales:{x:{stacked:false,offset:true,ticks:{color:'#94a3b8'},grid:{display:false}},y:{stacked:false,beginAtZero:true,ticks:{precision:0,color:'#94a3b8'},grid:{display:false}}}}}); }
+      const mensalEl=$('tabela-faturamento-mensal'); mensalEl.replaceChildren(); const mt=document.createElement('table');mt.className='w-full text-sm';const mh=document.createElement('thead');mh.innerHTML='<tr class="text-slate-400 border-b border-slate-800"><th class="p-2 text-left">Mês</th><th class="p-2 text-right">Ativações</th><th class="p-2 text-right">Renovações</th><th class="p-2 text-right">Valor de referência (R$ 26)</th></tr>';mt.appendChild(mh);const mb=document.createElement('tbody');mb.className='divide-y divide-slate-800';const nomesMes=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];for(let i=0;i<12;i++){const tr=document.createElement('tr');const vals=[nomesMes[i],ativacoes[i],renovacoes[i],formatarMoeda((ativacoes[i]+renovacoes[i])*VALOR_OPERACAO)];vals.forEach((v,j)=>{const td=document.createElement('td');td.className='p-2 '+(j?'text-right':'');td.textContent=v;tr.appendChild(td);});mb.appendChild(tr);}mt.appendChild(mb);mensalEl.appendChild(mt);
+      montarMatriz('matriz-cadastros',cadastrosMapa,Number($('matriz-cadastros-ano').value)||ano,'cadastro'); montarMatriz('matriz-vencidos',vencidosMapa,Number($('matriz-vencidos-ano').value)||ano,'vencido');
+      $('evol-total').textContent=clientesCache.length; $('evol-emdia').textContent=clientesCache.filter(c=>calcularStatusCliente(c.vencimento)==='Em dia').length; $('evol-vencidos').textContent=clientesCache.filter(c=>calcularStatusCliente(c.vencimento)==='Vencido').length;
+      const seletorPeriodo=$('filtro-evolucao-periodo');const periodoAnterior=seletorPeriodo.value;const periodos=[...new Set(clientesCache.map(c=>{const d=agruparPorAnoMes(c.data_cadastro);return d?`${d.ano}-${String(d.mes).padStart(2,'0')}`:null;}).filter(Boolean))].sort().reverse();seletorPeriodo.replaceChildren();const opcaoTodos=document.createElement('option');opcaoTodos.value='todos';opcaoTodos.textContent='Todos os períodos';seletorPeriodo.appendChild(opcaoTodos);periodos.forEach(k=>{const [a,m]=k.split('-');const o=document.createElement('option');o.value=k;o.textContent=`${['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][Number(m)-1]} ${a}`;seletorPeriodo.appendChild(o);});if(periodos.includes(periodoAnterior)||periodoAnterior==='todos')seletorPeriodo.value=periodoAnterior;else seletorPeriodo.value='todos';const periodoEscolhido=seletorPeriodo.value;const porDia=Array(31).fill(0);clientesCache.forEach(c=>{const d=agruparPorAnoMes(c.data_cadastro);if(d&&dentroPeriodo(c.data_cadastro)&&(periodoEscolhido==='todos'||`${d.ano}-${String(d.mes).padStart(2,'0')}`===periodoEscolhido))porDia[d.dia-1]++;});if(typeof Chart!=='undefined'){if(graficoEvolucaoBase)graficoEvolucaoBase.destroy();graficoEvolucaoBase=new Chart($('grafico-evolucao-base'),{type:'bar',data:{labels:Array.from({length:31},(_,i)=>String(i+1)),datasets:[{label:'Cadastros por dia do mês',data:porDia,backgroundColor:'#14b8a6',borderRadius:4,barPercentage:.75,categoryPercentage:.8}]},options:{responsive:true,maintainAspectRatio:false,onClick:(_e,els)=>{if(!els.length)return;const dia=els[0].index+1;const descricao=periodoEscolhido==='todos'?`Cadastros no dia ${dia} (todos os períodos)`: `Cadastros no dia ${dia} · ${periodoEscolhido}`;mostrarMensagem(`${descricao}: ${porDia[dia-1]} cadastro(s). Para filtrar clientes, use a busca/lista da base.`, 'info');},plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'#f8fafc',formatter:v=>v||''}},scales:{x:{title:{display:true,text:'Dia do mês',color:'#94a3b8'},ticks:{color:'#94a3b8',autoSkip:false,maxRotation:0},grid:{display:false}},y:{beginAtZero:true,ticks:{precision:0,color:'#94a3b8'},grid:{display:false}}}}});}
+    }
+
+    let clienteWhatsAppAtual = null;
+
+    function telefoneWhatsApp(valor) {
+      let numero = String(valor ?? '').replace(/\D/g, '');
+      if (!numero) return '';
+      if (numero.length <= 11) numero = '55' + numero;
+      return numero;
+    }
+
+    function obterAssinaturaWhatsApp(metodo) {
+      const m = Number.parseInt(metodo, 10) || 1;
+      if (m === 4) return `Para continuar utilizando nossos serviços, segue link para gerar o código de pagamento.\nhttps://fastdepix.space/p/DC53E3B9/renova55\nApós o pagamento envie o comprovante para liberação/renovação do seu acesso.\n\n*Indique 3 amigos e ganhe 5 meses grátis!*\n*SOLICITE NOSSOS BANNERS DE DIVULGAÇÃO!*\nAtenciosamente, WsPlay`;
+      if (m === 3) return `Para continuar utilizando nossos serviços, segue link para gerar o código de pagamento.\nhttps://fastdepix.space/p/DC53E3B9/wsrenovacao\nApós o pagamento envie o comprovante para liberação/renovação do seu acesso.\n\n*Indique 3 amigos e ganhe 5 meses grátis!*\n*SOLICITE NOSSOS BANNERS DE DIVULGAÇÃO!*\nAtenciosamente, WsPlay`;
+      if (m === 2) return `Para continuar utilizando nossos serviços, faça o pagamento via PIX:\n31986602438\nE envie o comprovante após o pagamento para a renovação.\n\n*Indique 3 amigos e ganhe 5 meses grátis!*\n*SOLICITE NOSSOS BANNERS DE DIVULGAÇÃO!*\nAtenciosamente, WsPlay`;
+      return `Para continuar utilizando nossos serviços, faça o pagamento via PIX:\nwsplaytvonline@gmail.com\nE envie o comprovante após o pagamento para a renovação.\n\n*Indique 3 amigos e ganhe 5 meses grátis!*\n*SOLICITE NOSSOS BANNERS DE DIVULGAÇÃO!*\nAtenciosamente, WsPlay`;
+    }
+
+    function montarMensagemWhatsApp(cliente, tipo) {
+      const nome = String(cliente.nome || 'cliente').trim().split(/\s+/)[0];
+      const venc = cliente.vencimento ? formatarData(cliente.vencimento) : 'N/A';
+      const assinatura = obterAssinaturaWhatsApp(cliente['Método Envio']);
+      const alertas = {
+        vence2: `Olá, ${nome}! Tudo bem?\n\nSeu acesso ao nosso aplicativo *vence em dois dias!*\n\n${assinatura}`,
+        vence1: `Olá, ${nome}! Tudo bem?\n\nSeu acesso ao nosso aplicativo *vence amanhã!*\n\n${assinatura}`,
+        vence0: `Olá, ${nome}! Tudo bem?\n\nSeu acesso ao nosso aplicativo *vence hoje!*\n\n${assinatura}`,
+        venceu1: `Olá, ${nome}! Tudo bem?\n\nSeu acesso ao nosso aplicativo *venceu ontem!*\n\n${assinatura}`,
+        venceu10: `Olá ${nome}, tudo bem?\n\nGostaríamos de agradecer pela parceria até aqui!\nNotamos que o seu acesso *venceu há 10 dias*.\nCaso não seja renovado em 5 dias, infelizmente, seu cadastro será deletado do sistema e será necessário refazer o processo de registro para voltar a utilizar nossos serviços.\nSe precisar de ajuda para renovar ou tiver dúvidas, estamos à disposição.`,
+        indicacao: `Olá ${nome}, tudo bem?\n\nEstá sabendo da novidade?\nO que era bom ficou ainda melhor! 🚀\n\nCada amigo indicado que contratar nosso serviço vale 1 ponto.\nCompletou 3 pontos? *Você ganha 5 MESES GRÁTIS na hora!* 🎁\n\n*Comece a indicar agora e garanta quase meio ano de serviço por nossa conta!*`,
+        ativacao: `Olá, ${nome}!\nObrigado por escolher o WsPlay! 🚀\n\nSua primeira renovação será em: *${venc}*\n\n*A cada 3 amigos indicados que ativarem a assinatura com a gente, você ganha 5 MESES GRÁTIS!*\n\nBem-vindo(a) à nossa comunidade!\n*Assistir nunca foi tão fácil!*`,
+        renovacao: `Olá ${nome},\n\nSeu pagamento foi recebido! ✅\nNova data de vencimento: *${venc}*\n\n*A cada 3 amigos indicados que ativarem a assinatura com a gente, você ganha 5 MESES GRÁTIS!*\n\nSolicite nossos banners de divulgação!\n\nEstamos à disposição.\nEquipe WsPlay`,
+        pix: `Olá ${nome}, tudo bem?\n\n${assinatura}`,
+        link: `Olá ${nome}, tudo bem?\n\n${obterAssinaturaWhatsApp(3)}`,
+        link55: `Olá ${nome}, tudo bem?\n\n${obterAssinaturaWhatsApp(4)}`
+      };
+      return alertas[tipo] || alertas.renovacao;
+    }
+
+    function atualizarTextoWhatsApp() {
+      if (!clienteWhatsAppAtual) return;
+      $('whatsapp-texto').value = montarMensagemWhatsApp(clienteWhatsAppAtual, $('whatsapp-tipo-mensagem').value);
+    }
+
+    function abrirModalWhatsApp(id) {
+      const cliente = clientesCache.find(c => String(c.idc) === String(id));
+      if (!cliente) return mostrarMensagem('Não foi possível localizar este cliente.', 'erro');
+      clienteWhatsAppAtual = cliente;
+      $('whatsapp-cliente-info').textContent = `${cliente.nome || 'Cliente'}`;
+      $('whatsapp-tipo-mensagem').value = 'renovacao';
+      atualizarTextoWhatsApp();
+      $('modal-whatsapp').classList.remove('hidden'); $('modal-whatsapp').classList.add('flex');
+    }
+
+    function fecharModalWhatsApp() {
+      $('modal-whatsapp').classList.add('hidden'); $('modal-whatsapp').classList.remove('flex'); clienteWhatsAppAtual = null;
+    }
+
+    async function copiarMensagemGerada() {
+      const texto = $('whatsapp-texto').value.trim();
+      if (!texto) return mostrarMensagem('A mensagem está vazia.', 'erro');
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(texto);
+        } else {
+          const area = $('whatsapp-texto');
+          area.focus(); area.select();
+          const copiou = document.execCommand('copy');
+          if (!copiou) throw new Error('O navegador não permitiu copiar automaticamente. Selecione o texto e use Ctrl+C.');
+        }
+        mostrarMensagem('Mensagem copiada! Agora é só colar no WhatsApp ou onde preferir.', 'sucesso');
+      } catch (e) {
+        $('whatsapp-texto').focus(); $('whatsapp-texto').select();
+        mostrarMensagem('Não consegui copiar automaticamente. O texto foi selecionado: pressione Ctrl+C para copiar.', 'info');
+      }
+    }
+
+    function exportarBaseCSV() {
+      if (!clientesCache.length) return mostrarMensagem('Não há clientes carregados para exportar.', 'erro');
+
+      // Cabeçalhos mantidos exatamente na ordem usada pela planilha do AppSheet.
+      // Telefone continua na exportação para não quebrar o AppSheet, embora fique oculto na interface do painel.
+      const colunas = [
+        {cabecalho:'IdC', campo:'idc'},
+        {cabecalho:'Nome', campo:'nome'},
+        {cabecalho:'usuario', campo:'usuario'},
+        {cabecalho:'senha', campo:'senha'},
+        {cabecalho:'Telefone', campo:'telefone'},
+        {cabecalho:'Vencimento', campo:'vencimento'},
+        {cabecalho:'VenceDia', campo:'vencedia'},
+        {cabecalho:'data_cadastro', campo:'data_cadastro'},
+        {cabecalho:'servidor', campo:'servidor'},
+        {cabecalho:'dispositivo', campo:'dispositivo'},
+        {cabecalho:'aplicativo', campo:'aplicativo'},
+        {cabecalho:'indicado_por', campo:'indicado_por'},
+        {cabecalho:'observacao', campo:'observacao'},
+        {cabecalho:'MacVence', campo:'macvence'},
+        {cabecalho:'mac', campo:'mac'},
+        {cabecalho:'Key', campo:'Key'},
+        {cabecalho:'link_m3u', campo:'link_m3u'},
+        {cabecalho:'Status', campo:'status'},
+        {cabecalho:'Clien', campo:null},
+        {cabecalho:'Venc', campo:null},
+        {cabecalho:'EmDia?', campo:'EmDia?'},
+        {cabecalho:'Método Envio', campo:'Método Envio'},
+        {cabecalho:'Chave_Validacao', campo:null, chaveValidacao:true}
+      ];
+      const escapar = valor => {
+        if (valor === null || valor === undefined) return '';
+        let v = valor instanceof Date ? valor.toISOString() : String(valor);
+        if (/^[=+@]/.test(v)) v = "'" + v;
+        return '"' + v.replace(/"/g, '""') + '"';
+      };
+      const formatarDataCSV = valor => {
+        if (valor === null || valor === undefined || valor === '') return '';
+        const texto = String(valor).slice(0, 10);
+        const m = texto.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        return m ? `${m[3]}/${m[2]}/${m[1]}` : String(valor);
+      };
+      const linhas = [colunas.map(c => escapar(c.cabecalho)).join(';')];
+      clientesCache.forEach(cliente => {
+        linhas.push(colunas.map(c => {
+          if (c.chaveValidacao) return escapar(`${String(cliente.nome ?? '').trim()}-${String(cliente.observacao ?? '').trim()}`);
+          if (!c.campo) return escapar('');
+          const valor = cliente[c.campo];
+          // A exportação para Excel/AppSheet usa datas brasileiras e data_cadastro sem horário.
+          if (['vencimento', 'data_cadastro', 'macvence'].includes(c.campo)) return escapar(formatarDataCSV(valor));
+          return escapar(valor);
+        }).join(';'));
+      });
+      const blob = new Blob(['\uFEFF' + linhas.join('\r\n')], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a'); link.href = url;
+      link.download = `WsPlay_Base_AppSheet_${hojeLocalISO()}.csv`;
+      document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+      mostrarMensagem(`Base exportada com 23 colunas: as 22 colunas compatíveis com o AppSheet e Chave_Validacao no final (${clientesCache.length} cliente(s)). A chave usa Nome-Observação de origem. IdC continua no arquivo para compatibilidade, mas não é usado como chave de conferência. Telefone foi mantido; Clien e Venc ficam vazias porque não existem na tabela do Supabase.`, 'sucesso');
+    }
+
+    $('form-atendimento').addEventListener('submit', salvarAtendimento);
+    $('btn-fechar-cartao').addEventListener('click', fecharCartaoCliente);
+    $('modal-cartao-cliente').addEventListener('click', e => { if(e.target === $('modal-cartao-cliente')) fecharCartaoCliente(); });
+    $('filtro-ano-financeiro').addEventListener('change', atualizarGraficosFinanceiros);
+    $('filtro-mes-financeiro').addEventListener('change', atualizarResumoFinanceiro);
+    ['graficos-data-inicio','graficos-data-fim'].forEach(id=>$(id).addEventListener('change',()=>{ atualizarGraficosFinanceiros(); atualizarTodosGraficos(); atualizarIndicadoresRapidos(); }));
+    $('btn-limpar-periodo-graficos').addEventListener('click',()=>{ $('graficos-data-inicio').value=''; $('graficos-data-fim').value=''; atualizarGraficosFinanceiros(); atualizarTodosGraficos(); atualizarIndicadoresRapidos(); });
+    $('ordenar-clientes').addEventListener('change',()=>{paginaAtual=0;renderizarTabela();});
+    $('btn-limpar-todos-filtros').addEventListener('click',()=>{ $('search-input').value=''; $('filtro-status').value=''; $('filtro-vencimento').value=''; $('graficos-data-inicio').value=''; $('graficos-data-fim').value=''; $('filtro-ano-financeiro').value=String(new Date().getFullYear()); $('matriz-cadastros-ano').value=String(new Date().getFullYear()); $('matriz-vencidos-ano').value=String(new Date().getFullYear()); $('filtro-evolucao-periodo').value='todos'; filtroGrafico=null; diaSelecionadoGrafico=null; paginaAtual=0; atualizarGraficosFinanceiros(); atualizarTodosGraficos(); atualizarIndicadoresRapidos(); renderizarTabela(); });
+    $('matriz-cadastros-ano').addEventListener('change', atualizarGraficosFinanceiros);
+    $('matriz-vencidos-ano').addEventListener('change', atualizarGraficosFinanceiros);
+    $('filtro-evolucao-periodo').addEventListener('change', atualizarGraficosFinanceiros);
+    $('login-form').addEventListener('submit', fazerLogin);
+    $('btn-logout').addEventListener('click', fazerLogout);
+    $('btn-novo-cliente').addEventListener('click', abrirModalNovoCliente);
+    $('btn-fechar-modal').addEventListener('click', fecharModalNovoCliente);
+    $('btn-cancelar').addEventListener('click', fecharModalNovoCliente);
+    $('btn-atualizar').addEventListener('click', carregarClientes);
+    $('btn-exportar-base').addEventListener('click', exportarBaseCSV);
+    $('whatsapp-tipo-mensagem').addEventListener('change', atualizarTextoWhatsApp);
+    $('btn-copiar-mensagem').addEventListener('click', copiarMensagemGerada);
+    $('btn-fechar-whatsapp').addEventListener('click', fecharModalWhatsApp);
+    $('btn-cancelar-whatsapp').addEventListener('click', fecharModalWhatsApp);
+    $('modal-whatsapp').addEventListener('click', e => { if (e.target === $('modal-whatsapp')) fecharModalWhatsApp(); });
+    $('search-input').addEventListener('input', () => { filtroGrafico=null; diaSelecionadoGrafico=null; paginaAtual=0; atualizarIndicadoresRapidos(); atualizarTodosGraficos(); renderizarTabela(); });
+    $('filtro-status').addEventListener('change', () => { filtroGrafico=null; diaSelecionadoGrafico=null; paginaAtual=0; atualizarIndicadoresRapidos(); atualizarTodosGraficos(); renderizarTabela(); });
+    $('filtro-vencimento').addEventListener('change', () => { filtroGrafico=null; diaSelecionadoGrafico=null; paginaAtual=0; atualizarIndicadoresRapidos(); atualizarTodosGraficos(); renderizarTabela(); });
+    $('btn-limpar-dia-grafico').addEventListener('click', limparFiltrosGraficos);
+    $('btn-limpar-filtros-graficos').addEventListener('click', limparFiltrosGraficos);
+    document.querySelectorAll('[data-filtro-vencimento]').forEach(botao => botao.addEventListener('click', () => aplicarFiltroGrafico('vencimentoRapido', botao.dataset.filtroVencimento, botao.querySelector('p')?.textContent || botao.dataset.filtroVencimento)));
+    $('btn-anterior').addEventListener('click', () => { if (paginaAtual > 0) { paginaAtual--; renderizarTabela(); } });
+    $('btn-proximo').addEventListener('click', () => {
+      const totalPaginas = Math.max(1, Math.ceil(obterClientesFiltrados().length / PAGE_SIZE));
+      if (paginaAtual < totalPaginas - 1) { paginaAtual++; renderizarTabela(); }
+    });
+    $('form-novo-cliente').addEventListener('submit', salvarCliente);
+    $('campo-vencimento').addEventListener('change', atualizarCampoEmDia);
+
+    // Fechar modal clicando fora dele ou pressionando Esc.
+    $('modal-cliente').addEventListener('click', (evento) => {
+      if (evento.target === $('modal-cliente')) fecharModalNovoCliente();
+    });
+    document.addEventListener('keydown', (evento) => {
+      if (evento.key === 'Escape') fecharModalNovoCliente();
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { data, error } = await supabaseClient.auth.getSession();
+      if (error) console.error('Erro ao verificar sessão:', error);
+      if (data?.session) await mostrarDashboard();
+
+      supabaseClient.auth.onAuthStateChange((evento, session) => {
+        if (evento === 'SIGNED_OUT' || !session) {
+          $('dashboard-screen').classList.add('hidden');
+          $('login-screen').classList.remove('hidden');
+        }
+      });
+    });
+  </script>
 </body>
 </html>
